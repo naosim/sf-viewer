@@ -17,11 +17,7 @@ yarn-error.log*
 .DS_Store
 
 # Generated Salesforce output
-objects.json
-fields.json
-flowDefinitions.json
-flows.json
-cronJobs.json
+output/
 flowrecord_desc.json
 
 # Local env

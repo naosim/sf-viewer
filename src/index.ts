@@ -88,6 +88,11 @@ async function main() {
   }
   console.log(`対象エイリアス: ${alias}`);
 
+  const outputDir = path.join(__dirname, '../output');
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
+
   try {
     if (!onlyFlows) {
       try {
@@ -98,9 +103,9 @@ async function main() {
         const objectsData = JSON.parse(objectsRes.stdout);
         
         // そのまま保存
-        const objectsOutputPath = path.join(__dirname, '../objects.json');
+        const objectsOutputPath = path.join(outputDir, 'objects.json');
         fs.writeFileSync(objectsOutputPath, JSON.stringify(objectsData, null, 2));
-        console.log(`オブジェクト一覧を取得し、objects.json に保存しました。（計 ${objectsData.result.totalSize} 件）`);
+        console.log(`オブジェクト一覧を取得し、output/objects.json に保存しました。（計 ${objectsData.result.totalSize} 件）`);
 
         // 4. 項目一覧の取得
         console.log('項目一覧を取得中...');
@@ -137,9 +142,9 @@ async function main() {
         console.log(''); // 改行
 
         // そのまま保存
-        const fieldsOutputPath = path.join(__dirname, '../fields.json');
+        const fieldsOutputPath = path.join(outputDir, 'fields.json');
         fs.writeFileSync(fieldsOutputPath, JSON.stringify(allFieldsData, null, 2));
-        console.log('すべての項目一覧を取得し、fields.json に保存しました。');
+        console.log('すべての項目一覧を取得し、output/fields.json に保存しました。');
       } catch (error: any) {
         console.error('データ取得中にエラーが発生しました:');
         if (error.message) console.error('Message:', error.message);
@@ -154,10 +159,10 @@ async function main() {
     try {
       const flowDefsRes = await execPromise('sf', ['data', 'query', '-q', flowDefsQuery, '-t', '-o', alias, '--json']);
       const flowDefsParsed = JSON.parse(flowDefsRes.stdout);
-      const flowDefsOutputPath = path.join(__dirname, '../flowDefinitions.json');
+      const flowDefsOutputPath = path.join(outputDir, 'flowDefinitions.json');
       fs.writeFileSync(flowDefsOutputPath, JSON.stringify(flowDefsParsed.result ? flowDefsParsed.result.records : [], null, 2));
       const flowDefsCount = flowDefsParsed.result ? flowDefsParsed.result.totalSize : 0;
-      console.log(`FlowDefinition一覧を取得し、flowDefinitions.json に保存しました。（計 ${flowDefsCount} 件）`);
+      console.log(`FlowDefinition一覧を取得し、output/flowDefinitions.json に保存しました。（計 ${flowDefsCount} 件）`);
     } catch (err: any) {
       console.error('\n警告: FlowDefinition一覧の取得に失敗しました。');
       if (err.stdout) console.error('STDOUT:', err.stdout);
@@ -170,10 +175,10 @@ async function main() {
       const flowsRes = await execPromise('sf', ['data', 'query', '-q', flowsQuery, '-o', alias, '--json']);
       const flowsParsed = JSON.parse(flowsRes.stdout);
       
-      const flowsOutputPath = path.join(__dirname, '../flows.json');
+      const flowsOutputPath = path.join(outputDir, 'flows.json');
       fs.writeFileSync(flowsOutputPath, JSON.stringify(flowsParsed.result ? flowsParsed.result.records : [], null, 2));
       const flowsCount = flowsParsed.result ? flowsParsed.result.totalSize : 0;
-      console.log(`フロー一覧を取得し、flows.json に保存しました。（計 ${flowsCount} 件）`);
+      console.log(`フロー一覧を取得し、output/flows.json に保存しました。（計 ${flowsCount} 件）`);
     } catch (err: any) {
       console.error('\n警告: フロー一覧の取得に失敗しました。');
       if (err.stdout) console.error('STDOUT:', err.stdout);
@@ -187,10 +192,10 @@ async function main() {
       const cronRes = await execPromise('sf', ['data', 'query', '-q', cronQuery, '-o', alias, '--json']);
       const cronParsed = JSON.parse(cronRes.stdout);
       
-      const cronOutputPath = path.join(__dirname, '../cronJobs.json');
+      const cronOutputPath = path.join(outputDir, 'cronJobs.json');
       fs.writeFileSync(cronOutputPath, JSON.stringify(cronParsed.result ? cronParsed.result.records : [], null, 2));
       const cronCount = cronParsed.result ? cronParsed.result.totalSize : 0;
-      console.log(`定期起動ジョブ一覧を取得し、cronJobs.json に保存しました。（計 ${cronCount} 件）`);
+      console.log(`定期起動ジョブ一覧を取得し、output/cronJobs.json に保存しました。（計 ${cronCount} 件）`);
     } catch (err: any) {
       console.error('\n警告: 定期起動ジョブ一覧の取得に失敗しました。');
       if (err.stdout) console.error('STDOUT:', err.stdout);

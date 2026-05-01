@@ -45,11 +45,13 @@ npx ts-node src/index.ts --only-flows
 
 ## 出力ファイル
 
-- `objects.json` - 取得したオブジェクト一覧
-- `fields.json` - 取得した項目一覧
-- `flowDefinitions.json` - 取得した FlowDefinition 一覧
-- `flows.json` - 取得した FlowRecord 一覧
-- `cronJobs.json` - 取得した CronTrigger 一覧
+すべての出力は `output/` ディレクトリに保存されます。
+
+- `output/objects.json` - 取得したオブジェクト一覧
+- `output/fields.json` - 取得した項目一覧
+- `output/flowDefinitions.json` - 取得した FlowDefinition 一覧
+- `output/flows.json` - 取得した FlowRecord 一覧
+- `output/cronJobs.json` - 取得した CronTrigger 一覧
 
 ## 補足
 
