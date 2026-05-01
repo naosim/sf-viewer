@@ -67,6 +67,12 @@ async function main() {
     console.error('エラー: config.json に alias が設定されていません。');
     process.exit(1);
   }
+
+  const objectBlackList = new Set<string>(
+    normalizeToArray(config.objectBlackList)
+      .filter((value): value is string => typeof value === 'string')
+  );
+
   console.log(`対象エイリアス: ${alias}`);
 
   const outputDir = path.join(__dirname, '../output');
@@ -110,6 +116,10 @@ async function main() {
           
           await Promise.all(chunk.map(async (obj: any) => {
             const objName = obj.QualifiedApiName;
+            if (objectBlackList.has(objName)) {
+              return;
+            }
+
             const fieldsQuery = `SELECT QualifiedApiName, Label, DataType, Length FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = '${objName}' ORDER BY QualifiedApiName`;
             
             try {
@@ -148,7 +158,7 @@ async function main() {
     try {
       const flowDefsParsed = await saveQueryJsonFile('flowDefinitions.json', alias, flowDefsQuery, true);
       const flowDefsCount = flowDefsParsed.result ? flowDefsParsed.result.totalSize : 0;
-      console.log(`FlowDefinition一覧を取得し、output/flowDefinitions.json に保存しました。（計 ${flowDefsCount} 件）`);
+      console.log(`FlowDefinition一覧を取得し、　output/flowDefinitions.json に保存しました。（計 ${flowDefsCount} 件）`);
     } catch (err: any) {
       console.error('\n警告: FlowDefinition一覧の取得に失敗しました。');
       if (err.stdout) console.error('STDOUT:', err.stdout);

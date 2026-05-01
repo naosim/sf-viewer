@@ -88,7 +88,7 @@ export interface SfQueryResult<T = any> {
 }
 
 export const sfQuery = async <T = any>(alias: string, query: string, tooling: boolean = false, extraArgs: string[] = []): Promise<SfQueryResult<T>> => {
-  const args = ['data', 'query', ...(tooling ? ['-t'] : []), '-q', query, '-o', alias, '--json', ...extraArgs];
+  const args = ['data', 'query', ...(tooling ? ['-t'] : []), '-q', query, ...extraArgs];
   const result = await runSf(args, { alias, json: true });
   try {
     const parsed = JSON.parse(result.stdout) as T;
