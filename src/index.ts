@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { execPromise, runSf, sfQuery } from './execPromise';
+import { execPromise, runSf, sfQuery, saveQueryJsonFile, saveSobjectListFile } from './execPromise';
 
 const normalizeNodeId = (value: string): string => {
   return `node_${value.replace(/[^a-zA-Z0-9_]/g, '_')}`;
@@ -81,31 +81,13 @@ async function main() {
     fs.mkdirSync(outputDir, { recursive: true });
   }
 
-    const saveQueryJsonFile = async (fileName: string, alias: string, query: string, tooling: boolean = false) => {
-      const queryRes = await sfQuery(alias, query, tooling);
-      const parsed = queryRes.parsed;
-      const outputPath = path.join(outputDir, fileName);
-      fs.writeFileSync(outputPath, JSON.stringify(parsed, null, 2));
-      return parsed;
-    };
-
-    const saveSobjectListFile = async (alias: string) => {
-      console.log('sObject一覧を取得中...');
-      const result = await runSf(['sobject', 'list', '--sobject', 'all'], { alias, json: true });
-      const parsed = JSON.parse(result.stdout);
-      const outputPath = path.join(outputDir, 'sobject-list.json');
-      fs.writeFileSync(outputPath, JSON.stringify(parsed, null, 2));
-      console.log(`sObject一覧を取得し、output/sobject-list.json に保存しました。`);
-      return parsed;
-    };
-
   try {
     if (!onlyFlows) {
       try {
         // 3. オブジェクト一覧の取得
         console.log('オブジェクト一覧を取得中...');
         const objectsQuery = `SELECT QualifiedApiName, Label, DeveloperName FROM EntityDefinition WHERE IsCustomizable = true ORDER BY QualifiedApiName`;
-        const objectsData = await saveQueryJsonFile('objects.json', alias, objectsQuery);
+        const objectsData = await saveQueryJsonFile(outputDir, 'objects.json', alias, objectsQuery);
         console.log(`オブジェクト一覧を取得し、output/objects.json に保存しました。（計 ${objectsData.result.totalSize} 件）`);
 
         // 4. 項目一覧の取得
@@ -161,7 +143,7 @@ async function main() {
 
     // sObject一覧の取得
     try {
-      await saveSobjectListFile(alias);
+      await saveSobjectListFile(outputDir, alias);
     } catch (err: any) {
       console.error(`\n警告: sObject一覧の取得に失敗しました。`);
       if (err.stdout) console.error('STDOUT:', err.stdout);
@@ -171,7 +153,7 @@ async function main() {
     for (const job of queryJobs) {
       console.log(`${job.label} を取得中...`);
       try {
-        const parsed = await saveQueryJsonFile(job.fileName, alias, job.query, job.tooling);
+        const parsed = await saveQueryJsonFile(outputDir, job.fileName, alias, job.query, job.tooling);
         const totalSize = parsed.result ? parsed.result.totalSize : 0;
         console.log(`${job.label} を取得し、output/${job.fileName} に保存しました。（計 ${totalSize} 件）`);
       } catch (err: any) {

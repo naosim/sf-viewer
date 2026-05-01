@@ -1,5 +1,6 @@
 import { execFile } from 'child_process';
 import * as fs from 'fs';
+import * as path from 'path';
 
 const isWindows = process.platform === 'win32';
 const gitBashPath = isWindows ? (
@@ -99,4 +100,22 @@ export const sfQuery = async <T = any>(alias: string, query: string, tooling: bo
     (parseError as any).stderr = result.stderr;
     throw parseError;
   }
+};
+
+export const saveQueryJsonFile = async (outputDir: string, fileName: string, alias: string, query: string, tooling: boolean = false) => {
+  const queryRes = await sfQuery(alias, query, tooling);
+  const parsed = queryRes.parsed;
+  const outputPath = path.join(outputDir, fileName);
+  fs.writeFileSync(outputPath, JSON.stringify(parsed, null, 2));
+  return parsed;
+};
+
+export const saveSobjectListFile = async (outputDir: string, alias: string, fileName: string = 'sobject-list.json') => {
+  console.log('sObject一覧を取得中...');
+  const result = await runSf(['sobject', 'list', '--sobject', 'all'], { alias, json: true });
+  const parsed = JSON.parse(result.stdout);
+  const outputPath = path.join(outputDir, fileName);
+  fs.writeFileSync(outputPath, JSON.stringify(parsed, null, 2));
+  console.log(`sObject一覧を取得し、output/${fileName} に保存しました。`);
+  return parsed;
 };
