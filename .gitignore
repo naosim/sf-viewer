@@ -22,3 +22,5 @@ flowrecord_desc.json
 
 # Local env
 .env
+
+force-app/

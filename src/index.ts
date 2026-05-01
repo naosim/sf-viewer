@@ -81,13 +81,23 @@ async function main() {
     fs.mkdirSync(outputDir, { recursive: true });
   }
 
-  const saveQueryJsonFile = async (fileName: string, alias: string, query: string, tooling: boolean = false) => {
-    const queryRes = await sfQuery(alias, query, tooling);
-    const parsed = queryRes.parsed;
-    const outputPath = path.join(outputDir, fileName);
-    fs.writeFileSync(outputPath, JSON.stringify(parsed, null, 2));
-    return parsed;
-  };
+    const saveQueryJsonFile = async (fileName: string, alias: string, query: string, tooling: boolean = false) => {
+      const queryRes = await sfQuery(alias, query, tooling);
+      const parsed = queryRes.parsed;
+      const outputPath = path.join(outputDir, fileName);
+      fs.writeFileSync(outputPath, JSON.stringify(parsed, null, 2));
+      return parsed;
+    };
+
+    const saveSobjectListFile = async (alias: string) => {
+      console.log('sObject一覧を取得中...');
+      const result = await runSf(['sobject', 'list', '--sobject', 'all'], { alias, json: true });
+      const parsed = JSON.parse(result.stdout);
+      const outputPath = path.join(outputDir, 'sobject-list.json');
+      fs.writeFileSync(outputPath, JSON.stringify(parsed, null, 2));
+      console.log(`sObject一覧を取得し、output/sobject-list.json に保存しました。`);
+      return parsed;
+    };
 
   try {
     if (!onlyFlows) {
@@ -149,6 +159,15 @@ async function main() {
       }
     }
 
+    // sObject一覧の取得
+    try {
+      await saveSobjectListFile(alias);
+    } catch (err: any) {
+      console.error(`\n警告: sObject一覧の取得に失敗しました。`);
+      if (err.stdout) console.error('STDOUT:', err.stdout);
+      else console.error('Error:', err.message);
+    }
+
     for (const job of queryJobs) {
       console.log(`${job.label} を取得中...`);
       try {
@@ -161,6 +180,7 @@ async function main() {
         else console.error('Error:', err.message);
       }
     }
+
 
     console.log('--- 処理1: 完了 ---');
   } catch (error: any) {
