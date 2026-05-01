@@ -26,12 +26,12 @@ sf-viewerは、Salesforce CLI (`sf`) を通じてSalesforce組織からデータ
   - フロー一覧: `FlowRecord`
   - FlowDefinition一覧: `FlowDefinition` (Tooling API)
   - 定期起動ジョブ一覧: `CronTrigger`
-- 取得したデータは以下のJSONファイルに保存する
-  - `objects.json`
-  - `fields.json`
-  - `flowDefinitions.json`
-  - `flows.json`
-  - `cronJobs.json`
+- 取得したデータは以下のファイルに保存する
+  - `output/objects.json`
+  - `output/fields.json`
+  - `output/flowDefinitions.json`
+  - `output/flows.json`
+  - `output/cronJobs.json`
 - オプション `--only-flows` を指定すると、オブジェクト一覧および項目一覧の取得をスキップし、Flow関連とCronTriggerのみ取得する
 
 #### 処理2

@@ -14,12 +14,53 @@ const shellEscape = (value: string): string => {
   return `'${value.replace(/'/g, `'\\''`)}'`;
 };
 
+const normalizeNodeId = (value: string): string => {
+  return `node_${value.replace(/[^a-zA-Z0-9_]/g, '_')}`;
+};
+
+const escapeMermaidLabel = (value: string | undefined | null): string => {
+  if (!value) return '';
+  return String(value)
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\r?\n/g, '\\n');
+};
+
+const loadJsonFile = <T>(filePath: string): T => {
+  return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+};
+
+const normalizeToArray = <T>(value: T | T[] | undefined | null): T[] => {
+  if (value === undefined || value === null) return [];
+  return Array.isArray(value) ? value : [value];
+};
+
+const listFilesRecursively = (dir: string): string[] => {
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
+    const fullPath = path.join(dir, entry.name);
+    return entry.isDirectory() ? listFilesRecursively(fullPath) : [fullPath];
+  });
+};
+
 // コマンドを実行するためのヘルパー関数
-const execPromise = (cmd: string, args: string[]): Promise<{ stdout: string; stderr: string }> => {
+const execPromise = (cmd: string, args: string[], useShell: boolean = useGitBash): Promise<{ stdout: string; stderr: string }> => {
   return new Promise((resolve, reject) => {
-    const actualCmd = cmd === 'sf' ? 'npx' : cmd;
-    const actualArgs = cmd === 'sf' ? ['sf', ...args] : args;
-    if (useGitBash) {
+    const shellCmd = cmd === 'sf' ? 'npx' : cmd;
+    let actualCmd: string;
+    let actualArgs: string[];
+    if (useShell && useGitBash) {
+      actualCmd = shellCmd;
+      actualArgs = cmd === 'sf' ? ['sf', ...args] : args;
+    } else if (process.platform === 'win32' && cmd === 'sf') {
+      actualCmd = process.env.comspec || 'cmd.exe';
+      actualArgs = ['/c', 'npx', 'sf', ...args];
+    } else {
+      actualCmd = cmd === 'sf' ? 'npx' : cmd;
+      actualArgs = cmd === 'sf' ? ['sf', ...args] : args;
+    }
+
+    if (useShell && useGitBash) {
       const commandString = [actualCmd, ...actualArgs].map(shellEscape).join(' ');
       console.log(`[sf command] ${commandString} (git-bash)`);
       execFile(gitBashPath!, ['-lc', commandString], { maxBuffer: 1024 * 1024 * 50 }, (error, stdout, stderr) => {
@@ -160,7 +201,8 @@ async function main() {
       const flowDefsRes = await execPromise('sf', ['data', 'query', '-q', flowDefsQuery, '-t', '-o', alias, '--json']);
       const flowDefsParsed = JSON.parse(flowDefsRes.stdout);
       const flowDefsOutputPath = path.join(outputDir, 'flowDefinitions.json');
-      fs.writeFileSync(flowDefsOutputPath, JSON.stringify(flowDefsParsed.result ? flowDefsParsed.result.records : [], null, 2));
+      const flowDefsRecords = flowDefsParsed.result ? flowDefsParsed.result.records : [];
+      fs.writeFileSync(flowDefsOutputPath, JSON.stringify(flowDefsRecords, null, 2));
       const flowDefsCount = flowDefsParsed.result ? flowDefsParsed.result.totalSize : 0;
       console.log(`FlowDefinition一覧を取得し、output/flowDefinitions.json に保存しました。（計 ${flowDefsCount} 件）`);
     } catch (err: any) {
@@ -176,11 +218,12 @@ async function main() {
       const flowsParsed = JSON.parse(flowsRes.stdout);
       
       const flowsOutputPath = path.join(outputDir, 'flows.json');
-      fs.writeFileSync(flowsOutputPath, JSON.stringify(flowsParsed.result ? flowsParsed.result.records : [], null, 2));
+      const flows = flowsParsed.result ? flowsParsed.result.records : [];
+      fs.writeFileSync(flowsOutputPath, JSON.stringify(flows, null, 2));
       const flowsCount = flowsParsed.result ? flowsParsed.result.totalSize : 0;
       console.log(`フロー一覧を取得し、output/flows.json に保存しました。（計 ${flowsCount} 件）`);
     } catch (err: any) {
-      console.error('\n警告: フロー一覧の取得に失敗しました。');
+      console.error('\n警告: FlowDefinition一覧の取得に失敗しました。');
       if (err.stdout) console.error('STDOUT:', err.stdout);
       else console.error('Error:', err.message);
     }
