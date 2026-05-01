@@ -63,6 +63,7 @@ async function main() {
   }
 
   const alias = config.alias;
+  const queryJobs = normalizeToArray(config.queryJobs);
   if (!alias) {
     console.error('エラー: config.json に alias が設定されていません。');
     process.exit(1);
@@ -153,41 +154,17 @@ async function main() {
       }
     }
 
-    console.log('FlowDefinition一覧を取得中...');
-    const flowDefsQuery = `SELECT Id, DeveloperName, MasterLabel, ActiveVersionId, LatestVersionId FROM FlowDefinition ORDER BY DeveloperName`;
-    try {
-      const flowDefsParsed = await saveQueryJsonFile('flowDefinitions.json', alias, flowDefsQuery, true);
-      const flowDefsCount = flowDefsParsed.result ? flowDefsParsed.result.totalSize : 0;
-      console.log(`FlowDefinition一覧を取得し、　output/flowDefinitions.json に保存しました。（計 ${flowDefsCount} 件）`);
-    } catch (err: any) {
-      console.error('\n警告: FlowDefinition一覧の取得に失敗しました。');
-      if (err.stdout) console.error('STDOUT:', err.stdout);
-      else console.error('Error:', err.message);
-    }
-
-    console.log('フロー一覧（レコードとして）を取得中...');
-    const flowsQuery = `SELECT Id, Name, FlowLabel, ApiName, ProgressStatus, IsPaused, FlowType, FlowDefinition, CreatedDate, LastModifiedDate FROM FlowRecord LIMIT 200`;
-    try {
-      const flowsParsed = await saveQueryJsonFile('flows.json', alias, flowsQuery);
-      const flowsCount = flowsParsed.result ? flowsParsed.result.totalSize : 0;
-      console.log(`フロー一覧を取得し、output/flows.json に保存しました。（計 ${flowsCount} 件）`);
-    } catch (err: any) {
-      console.error('\n警告: FlowDefinition一覧の取得に失敗しました。');
-      if (err.stdout) console.error('STDOUT:', err.stdout);
-      else console.error('Error:', err.message);
-    }
-
-    // 6. 定期起動ジョブ（CronTrigger）の取得
-    console.log('定期起動ジョブ一覧（CronTrigger）を取得中...');
-    const cronQuery = `SELECT Id, CronExpression, NextFireTime, PreviousFireTime, State, CronJobDetail.Name, CronJobDetail.JobType FROM CronTrigger ORDER BY NextFireTime`;
-    try {
-      const cronParsed = await saveQueryJsonFile('cronJobs.json', alias, cronQuery);
-      const cronCount = cronParsed.result ? cronParsed.result.totalSize : 0;
-      console.log(`定期起動ジョブ一覧を取得し、output/cronJobs.json に保存しました。（計 ${cronCount} 件）`);
-    } catch (err: any) {
-      console.error('\n警告: 定期起動ジョブ一覧の取得に失敗しました。');
-      if (err.stdout) console.error('STDOUT:', err.stdout);
-      else console.error('Error:', err.message);
+    for (const job of queryJobs) {
+      console.log(`${job.label} を取得中...`);
+      try {
+        const parsed = await saveQueryJsonFile(job.fileName, alias, job.query, job.tooling);
+        const totalSize = parsed.result ? parsed.result.totalSize : 0;
+        console.log(`${job.label} を取得し、output/${job.fileName} に保存しました。（計 ${totalSize} 件）`);
+      } catch (err: any) {
+        console.error(`\n警告: ${job.label} の取得に失敗しました。`);
+        if (err.stdout) console.error('STDOUT:', err.stdout);
+        else console.error('Error:', err.message);
+      }
     }
 
     console.log('--- 処理1: 完了 ---');
