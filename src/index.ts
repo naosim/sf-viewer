@@ -1,18 +1,6 @@
-import { execFile } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
-
-const isWindows = process.platform === 'win32';
-const gitBashPath = isWindows ? (
-  fs.existsSync('C:\\Program Files\\Git\\bin\\bash.exe') ? 'C:\\Program Files\\Git\\bin\\bash.exe' :
-  fs.existsSync('C:\\Program Files (x86)\\Git\\bin\\bash.exe') ? 'C:\\Program Files (x86)\\Git\\bin\\bash.exe' :
-  undefined
-) : undefined;
-const useGitBash = !!gitBashPath;
-
-const shellEscape = (value: string): string => {
-  return `'${value.replace(/'/g, `'\\''`)}'`;
-};
+import { execPromise, runSf, sfQuery } from './execPromise';
 
 const normalizeNodeId = (value: string): string => {
   return `node_${value.replace(/[^a-zA-Z0-9_]/g, '_')}`;
@@ -43,54 +31,6 @@ const listFilesRecursively = (dir: string): string[] => {
   });
 };
 
-// コマンドを実行するためのヘルパー関数
-const execPromise = (cmd: string, args: string[], useShell: boolean = useGitBash): Promise<{ stdout: string; stderr: string }> => {
-  return new Promise((resolve, reject) => {
-    const shellCmd = cmd === 'sf' ? 'npx' : cmd;
-    let actualCmd: string;
-    let actualArgs: string[];
-    if (useShell && useGitBash) {
-      actualCmd = shellCmd;
-      actualArgs = cmd === 'sf' ? ['sf', ...args] : args;
-    } else if (process.platform === 'win32' && cmd === 'sf') {
-      actualCmd = process.env.comspec || 'cmd.exe';
-      actualArgs = ['/c', 'npx', 'sf', ...args];
-    } else {
-      actualCmd = cmd === 'sf' ? 'npx' : cmd;
-      actualArgs = cmd === 'sf' ? ['sf', ...args] : args;
-    }
-
-    if (useShell && useGitBash) {
-      const commandString = [actualCmd, ...actualArgs].map(shellEscape).join(' ');
-      console.log(`[sf command] ${commandString} (git-bash)`);
-      execFile(gitBashPath!, ['-lc', commandString], { maxBuffer: 1024 * 1024 * 50 }, (error, stdout, stderr) => {
-        if (error) {
-          const err: any = error;
-          err.stdout = stdout;
-          err.stderr = stderr;
-          reject(err);
-        } else {
-          resolve({ stdout, stderr });
-        }
-      });
-      return;
-    }
-
-    const formatted = [actualCmd, ...actualArgs.map(arg => /\s/.test(arg) ? `"${arg}"` : arg)].join(' ');
-    console.log(`[sf command] ${formatted}`);
-    execFile(actualCmd, actualArgs, { maxBuffer: 1024 * 1024 * 50 }, (error, stdout, stderr) => {
-      if (error) {
-        const err: any = error;
-        err.stdout = stdout;
-        err.stderr = stderr;
-        reject(err);
-      } else {
-        resolve({ stdout, stderr });
-      }
-    });
-  });
-};
-
 async function main() {
   const onlyFlows = process.argv.includes('--only-flows') || process.argv.includes('--flow-only');
   if (onlyFlows) {
@@ -101,7 +41,7 @@ async function main() {
 
   // 1. sfコマンドの有無を確認
   try {
-    await execPromise('sf', ['--version']);
+    await runSf(['--version']);
   } catch (error) {
     console.error('エラー: sf コマンドが見つかりません。Salesforce CLIをインストールしてください。');
     process.exit(1);
@@ -134,14 +74,22 @@ async function main() {
     fs.mkdirSync(outputDir, { recursive: true });
   }
 
+  const saveQueryJsonFile = async (fileName: string, alias: string, query: string, tooling: boolean = false) => {
+    const queryRes = await sfQuery(alias, query, tooling);
+    const parsed = queryRes.parsed;
+    const outputPath = path.join(outputDir, fileName);
+    fs.writeFileSync(outputPath, JSON.stringify(parsed, null, 2));
+    return parsed;
+  };
+
   try {
     if (!onlyFlows) {
       try {
         // 3. オブジェクト一覧の取得
         console.log('オブジェクト一覧を取得中...');
         const objectsQuery = `SELECT QualifiedApiName, Label, DeveloperName FROM EntityDefinition WHERE IsCustomizable = true ORDER BY QualifiedApiName`;
-        const objectsRes = await execPromise('sf', ['data', 'query', '-q', objectsQuery, '-o', alias, '--json']);
-        const objectsData = JSON.parse(objectsRes.stdout);
+        const objectsRes = await sfQuery(alias, objectsQuery);
+        const objectsData = objectsRes.parsed;
         
         // そのまま保存
         const objectsOutputPath = path.join(outputDir, 'objects.json');
@@ -165,8 +113,8 @@ async function main() {
             const fieldsQuery = `SELECT QualifiedApiName, Label, DataType, Length FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = '${objName}' ORDER BY QualifiedApiName`;
             
             try {
-              const fieldsRes = await execPromise('sf', ['data', 'query', '-q', fieldsQuery, '-o', alias, '--json']);
-              const fieldsParsed = JSON.parse(fieldsRes.stdout);
+              const fieldsRes = await sfQuery(alias, fieldsQuery);
+              const fieldsParsed = fieldsRes.parsed;
               allFieldsData.push({
                 objectName: objName,
                 fields: fieldsParsed.result ? fieldsParsed.result.records : []
@@ -198,11 +146,7 @@ async function main() {
     console.log('FlowDefinition一覧を取得中...');
     const flowDefsQuery = `SELECT Id, DeveloperName, MasterLabel, ActiveVersionId, LatestVersionId FROM FlowDefinition ORDER BY DeveloperName`;
     try {
-      const flowDefsRes = await execPromise('sf', ['data', 'query', '-q', flowDefsQuery, '-t', '-o', alias, '--json']);
-      const flowDefsParsed = JSON.parse(flowDefsRes.stdout);
-      const flowDefsOutputPath = path.join(outputDir, 'flowDefinitions.json');
-      const flowDefsRecords = flowDefsParsed.result ? flowDefsParsed.result.records : [];
-      fs.writeFileSync(flowDefsOutputPath, JSON.stringify(flowDefsRecords, null, 2));
+      const flowDefsParsed = await saveQueryJsonFile('flowDefinitions.json', alias, flowDefsQuery, true);
       const flowDefsCount = flowDefsParsed.result ? flowDefsParsed.result.totalSize : 0;
       console.log(`FlowDefinition一覧を取得し、output/flowDefinitions.json に保存しました。（計 ${flowDefsCount} 件）`);
     } catch (err: any) {
@@ -214,12 +158,7 @@ async function main() {
     console.log('フロー一覧（レコードとして）を取得中...');
     const flowsQuery = `SELECT Id, Name, FlowLabel, ApiName, ProgressStatus, IsPaused, FlowType, FlowDefinition, CreatedDate, LastModifiedDate FROM FlowRecord LIMIT 200`;
     try {
-      const flowsRes = await execPromise('sf', ['data', 'query', '-q', flowsQuery, '-o', alias, '--json']);
-      const flowsParsed = JSON.parse(flowsRes.stdout);
-      
-      const flowsOutputPath = path.join(outputDir, 'flows.json');
-      const flows = flowsParsed.result ? flowsParsed.result.records : [];
-      fs.writeFileSync(flowsOutputPath, JSON.stringify(flows, null, 2));
+      const flowsParsed = await saveQueryJsonFile('flows.json', alias, flowsQuery);
       const flowsCount = flowsParsed.result ? flowsParsed.result.totalSize : 0;
       console.log(`フロー一覧を取得し、output/flows.json に保存しました。（計 ${flowsCount} 件）`);
     } catch (err: any) {
@@ -232,11 +171,7 @@ async function main() {
     console.log('定期起動ジョブ一覧（CronTrigger）を取得中...');
     const cronQuery = `SELECT Id, CronExpression, NextFireTime, PreviousFireTime, State, CronJobDetail.Name, CronJobDetail.JobType FROM CronTrigger ORDER BY NextFireTime`;
     try {
-      const cronRes = await execPromise('sf', ['data', 'query', '-q', cronQuery, '-o', alias, '--json']);
-      const cronParsed = JSON.parse(cronRes.stdout);
-      
-      const cronOutputPath = path.join(outputDir, 'cronJobs.json');
-      fs.writeFileSync(cronOutputPath, JSON.stringify(cronParsed.result ? cronParsed.result.records : [], null, 2));
+      const cronParsed = await saveQueryJsonFile('cronJobs.json', alias, cronQuery);
       const cronCount = cronParsed.result ? cronParsed.result.totalSize : 0;
       console.log(`定期起動ジョブ一覧を取得し、output/cronJobs.json に保存しました。（計 ${cronCount} 件）`);
     } catch (err: any) {
