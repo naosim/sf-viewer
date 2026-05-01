@@ -1,0 +1,28 @@
+# Node modules
+node_modules/
+
+# TypeScript
+dist/
+*.js
+*.js.map
+*.d.ts
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE/editor
+.vscode/
+.DS_Store
+
+# Generated Salesforce output
+objects.json
+fields.json
+flowDefinitions.json
+flows.json
+cronJobs.json
+flowrecord_desc.json
+
+# Local env
+.env
