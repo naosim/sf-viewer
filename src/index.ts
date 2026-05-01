@@ -95,12 +95,7 @@ async function main() {
         // 3. オブジェクト一覧の取得
         console.log('オブジェクト一覧を取得中...');
         const objectsQuery = `SELECT QualifiedApiName, Label, DeveloperName FROM EntityDefinition WHERE IsCustomizable = true ORDER BY QualifiedApiName`;
-        const objectsRes = await sfQuery(alias, objectsQuery);
-        const objectsData = objectsRes.parsed;
-        
-        // そのまま保存
-        const objectsOutputPath = path.join(outputDir, 'objects.json');
-        fs.writeFileSync(objectsOutputPath, JSON.stringify(objectsData, null, 2));
+        const objectsData = await saveQueryJsonFile('objects.json', alias, objectsQuery);
         console.log(`オブジェクト一覧を取得し、output/objects.json に保存しました。（計 ${objectsData.result.totalSize} 件）`);
 
         // 4. 項目一覧の取得
