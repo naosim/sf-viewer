@@ -13,9 +13,6 @@ async function main() {
     console.log("--- 処理1: Salesforceからのデータ取得を開始します ---");
   }
 
-  // 1. sfコマンドの有無を確認
-  await SfClient.checkSfInstalled();
-
   // 2. config.jsonの読み込み
   const configPath = path.join(__dirname, "../config.json");
   const config = loadConfig(configPath);
@@ -34,7 +31,8 @@ async function main() {
 
   const retrievedAt = new Date();
   const sfClient = new SfClient(alias, outputDir, retrievedAt);
-
+  // 1. sfコマンドの有無を確認
+  await sfClient.checkSfInstalled();
   const retrieveSalesforce = new RetrieveSalesforce(
     sfClient,
     config,

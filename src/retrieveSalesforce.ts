@@ -10,6 +10,38 @@ const getObjectNameFromQuery = (query: string): string | null => {
   return fromMatch ? fromMatch[1] : null;
 };
 
+const getColumnNamesFromQuery = (query: string): string[] => {
+  const selectMatch = query.match(/\bSELECT\s+(.+?)\s+FROM\b/i);
+  if (!selectMatch) return [];
+
+  const selectPart = selectMatch[1];
+  const columns: string[] = [];
+
+  let depth = 0;
+  let current = "";
+
+  for (const char of selectPart) {
+    if (char === "(") {
+      depth++;
+      current += char;
+    } else if (char === ")") {
+      depth--;
+      current += char;
+    } else if (char === "," && depth === 0) {
+      const trimmed = current.trim();
+      if (trimmed) columns.push(trimmed);
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+
+  const trimmed = current.trim();
+  if (trimmed) columns.push(trimmed);
+
+  return columns;
+};
+
 /**
  * Salesforceから各種データを取得する
  */
@@ -47,7 +79,9 @@ export class RetrieveSalesforce {
 
         // objectNames セットを構築
         if (objectsData && objectsData.result && objectsData.result.records) {
-          objectNames = new Set(objectsData.result.records.map((obj: any) => obj.QualifiedApiName));
+          objectNames = new Set(
+            objectsData.result.records.map((obj: any) => obj.QualifiedApiName),
+          );
         }
 
         // 4. 項目一覧の取得
@@ -100,15 +134,16 @@ export class RetrieveSalesforce {
         console.log(
           "すべての項目一覧を取得し、output/fields.json に保存しました。",
         );
+
+        await sfClient.saveSobjectListFile();
       } catch (error: any) {
         throw error;
       }
     }
 
     // sObject一覧の取得 (ファイルから読み込み)
-    const sobjectListJsonFileName = "sobject-list.json";
     try {
-      sobjectRepository = sfClient.createSobjectRepository(sobjectListJsonFileName);
+      sobjectRepository = sfClient.createSobjectRepository();
     } catch (err: any) {
       console.error(`\n警告: sObject一覧の読み込みに失敗しました。`);
       if (err.stdout) console.error("STDOUT:", err.stdout);
@@ -124,7 +159,10 @@ export class RetrieveSalesforce {
         if (objName) {
           if (objectNames.has(objName)) {
             dataType = "object";
-          } else if (sobjectRepository && sobjectRepository.isSobject(objName)) {
+          } else if (
+            sobjectRepository &&
+            sobjectRepository.isSobject(objName)
+          ) {
             dataType = "metadata";
           }
         }
@@ -132,7 +170,7 @@ export class RetrieveSalesforce {
           job.fileName,
           job.query,
           job.tooling,
-          dataType
+          dataType,
         );
         const totalSize = parsed.result ? parsed.result.totalSize : 0;
         console.log(

@@ -94,7 +94,7 @@ export interface SfOptions {
   useShell?: boolean;
 }
 
-export const runSf = (
+const _runSf = (
   args: string[],
   options: SfOptions = {},
 ): Promise<{ stdout: string; stderr: string }> => {
@@ -134,11 +134,21 @@ export class SfClient implements IFileSaver {
   private alias: string;
   private outputDir: string;
   private retrievedAt: Date;
+  private runSf: (
+    args: string[],
+    options: SfOptions,
+  ) => Promise<{ stdout: string; stderr: string }>;
 
-  constructor(alias: string, outputDir: string, retrievedAt: Date) {
+  constructor(
+    alias: string,
+    outputDir: string,
+    retrievedAt: Date,
+    runSfFunc = _runSf,
+  ) {
     this.alias = alias;
     this.outputDir = outputDir;
     this.retrievedAt = retrievedAt;
+    this.runSf = runSfFunc;
   }
 
   async sfQuery<T = any>(
@@ -154,7 +164,7 @@ export class SfClient implements IFileSaver {
       query,
       ...extraArgs,
     ];
-    const result = await runSf(args, { alias: this.alias, json: true });
+    const result = await this.runSf(args, { alias: this.alias, json: true });
     try {
       const parsed = JSON.parse(result.stdout) as T;
       return { parsed, stdout: result.stdout, stderr: result.stderr };
@@ -180,15 +190,34 @@ export class SfClient implements IFileSaver {
     return parsed;
   }
 
-  async saveSobjectListFile(fileName: string = "sobject-list.json") {
+  async saveSobjectListFile() {
+    const fileName = SfClient.sobjectListJsonFileName;
     console.log("sObject一覧を取得中...");
-    const result = await runSf(["sobject", "list", "--sobject", "all"], {
+    const result = await this.runSf(["sobject", "list", "--sobject", "all"], {
       alias: this.alias,
       json: true,
     });
     const parsed = JSON.parse(result.stdout);
     this.saveJson(fileName, parsed);
     console.log(`sObject一覧を取得し、output/${fileName} に保存しました。`);
+    return parsed;
+  }
+
+  async saveSobjectDescribeFile(
+    sobjectName: string,
+    fileName?: string,
+  ): Promise<any> {
+    console.log(`${sobjectName} のメタデータを取得中...`);
+    const result = await this.runSf(
+      ["sobject", "describe", "--sobject", sobjectName],
+      { alias: this.alias, json: true },
+    );
+    const parsed = JSON.parse(result.stdout);
+    const actualFileName = fileName || `${sobjectName}-describe.json`;
+    this.saveJson(actualFileName, parsed);
+    console.log(
+      `${sobjectName} のメタデータを取得し、output/${actualFileName} に保存しました。`,
+    );
     return parsed;
   }
 
@@ -207,31 +236,57 @@ export class SfClient implements IFileSaver {
     fs.writeFileSync(outputPath, JSON.stringify(dataToSave, null, 2));
   }
 
-  createSobjectRepository(fileName: string) {
-    return new SobjectRepository(this.outputDir, fileName);
+  createObjectRepository(fileName: string) {
+    return new ObjectRepository(this.outputDir, fileName);
   }
 
-  static async checkSfInstalled(): Promise<void> {
+  createSobjectRepository() {
+    return new SobjectRepository(
+      this.outputDir,
+      SfClient.sobjectListJsonFileName,
+    );
+  }
+
+  async checkSfInstalled(): Promise<void> {
     try {
-      await runSf(["--version"]);
+      await this.runSf(["--version"], {});
     } catch (error) {
       throw new Error(
         "エラー: sf コマンドが見つかりません。Salesforce CLIをインストールしてください。",
       );
     }
   }
+
+  static sobjectListJsonFileName = "sobject-list.json";
+}
+
+export class ObjectRepository {
+  obj?: any;
+  constructor(
+    readonly outputDir: string,
+    readonly fileName: string,
+  ) {}
+  init() {
+    this.loadJsonData();
+  }
+  loadJsonData() {
+    const outputPath = path.join(this.outputDir, this.fileName);
+    this.obj = JSON.parse(fs.readFileSync(outputPath, "utf8"));
+  }
 }
 
 export class SobjectRepository {
-  private outputDir: string;
-  private fileName: string;
   obj?: any;
   list?: any[];
   qualifiedApiNameSet?: Set<string>;
 
-  constructor(outputDir: string, fileName: string) {
-    this.outputDir = outputDir;
-    this.fileName = fileName;
+  constructor(
+    readonly outputDir: string,
+    readonly fileName: string,
+  ) {}
+
+  init() {
+    this.loadJsonData();
   }
 
   loadJsonData() {
