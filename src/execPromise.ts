@@ -221,6 +221,67 @@ export class SfClient implements IFileSaver {
     return parsed;
   }
 
+  loadObjectsJson(): any {
+    const filePath = path.join(this.outputDir, SfClient.objectsJsonFileName);
+    if (!fs.existsSync(filePath)) {
+      throw new Error(
+        `エラー: ${SfClient.objectsJsonFileName} が見つかりません。`,
+      );
+    }
+    const content = fs.readFileSync(filePath, "utf8");
+    return JSON.parse(content);
+  }
+
+  async saveFieldsFile(objectBlackList: string[]): Promise<any> {
+    const fileName = SfClient.fieldsJsonFileName;
+    const objectsData = this.loadObjectsJson();
+    const objectList = objectsData?.data?.result?.records || [];
+
+    const blackListSet = new Set(objectBlackList);
+    const filteredObjectList = objectList.filter(
+      (obj: any) => !blackListSet.has(obj.QualifiedApiName),
+    );
+
+    console.log("項目一覧を取得中...");
+    const allFieldsData: any[] = [];
+
+    let count = 0;
+    const chunkSize = 10;
+    for (let i = 0; i < filteredObjectList.length; i += chunkSize) {
+      const chunk = filteredObjectList.slice(i, i + chunkSize);
+
+      await Promise.all(
+        chunk.map(async (obj: any) => {
+          const objName = obj.QualifiedApiName;
+          const fieldsQuery = `SELECT QualifiedApiName, Label, DataType, Length FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = '${objName}' ORDER BY QualifiedApiName`;
+
+          try {
+            const fieldsRes = await this.sfQuery(fieldsQuery);
+            const fieldsParsed = fieldsRes.parsed;
+            allFieldsData.push({
+              objectName: objName,
+              fields: fieldsParsed.result ? fieldsParsed.result.records : [],
+            });
+          } catch (err: any) {
+            console.warn(
+              `\n警告: ${objName} の項目一覧の取得に失敗しました。スキップします。`,
+            );
+          }
+        }),
+      );
+
+      count += chunk.length;
+      console.log(`取得進捗: ${count} / ${filteredObjectList.length} 完了`);
+    }
+    console.log("");
+
+    this.saveJson(fileName, allFieldsData);
+    console.log(
+      `すべての項目一覧を取得し、output/${fileName} に保存しました。`,
+    );
+    return allFieldsData;
+  }
+
   saveJson(fileName: string, data: any, dataType?: string) {
     const dataToSave: any = {
       meta: {
@@ -236,8 +297,12 @@ export class SfClient implements IFileSaver {
     fs.writeFileSync(outputPath, JSON.stringify(dataToSave, null, 2));
   }
 
-  createObjectRepository(fileName: string) {
-    return new ObjectRepository(this.outputDir, fileName);
+  createObjectRepository() {
+    return new ObjectRepository(
+      this.outputDir,
+      SfClient.objectsJsonFileName,
+      SfClient.fieldsJsonFileName,
+    );
   }
 
   createSobjectRepository() {
@@ -258,20 +323,46 @@ export class SfClient implements IFileSaver {
   }
 
   static sobjectListJsonFileName = "sobject-list.json";
+  static objectsJsonFileName = "objects.json";
+  static fieldsJsonFileName = "fields.json";
 }
 
 export class ObjectRepository {
-  obj?: any;
+  objects!: any;
+  objectNames!: Set<string>;
+  fields!: any;
   constructor(
     readonly outputDir: string,
-    readonly fileName: string,
+    readonly objectsJsonFileName: string,
+    readonly fieldsJsonFileName: string,
   ) {}
   init() {
     this.loadJsonData();
+    return this;
   }
   loadJsonData() {
-    const outputPath = path.join(this.outputDir, this.fileName);
-    this.obj = JSON.parse(fs.readFileSync(outputPath, "utf8"));
+    // オブジェクト一覧の取得
+    this.objects = JSON.parse(
+      fs.readFileSync(
+        path.join(this.outputDir, this.objectsJsonFileName),
+        "utf8",
+      ),
+    );
+    // オブジェクト名のSet作成
+    this.objectNames = new Set(
+      this.objects.data.result.records.map((obj: any) => obj.QualifiedApiName),
+    );
+
+    this.fields = JSON.parse(
+      fs.readFileSync(
+        path.join(this.outputDir, this.fieldsJsonFileName),
+        "utf8",
+      ),
+    );
+  }
+
+  isObject(objectName: string) {
+    return this.objectNames.has(objectName);
   }
 }
 
@@ -287,6 +378,7 @@ export class SobjectRepository {
 
   init() {
     this.loadJsonData();
+    return this;
   }
 
   loadJsonData() {
