@@ -5,9 +5,9 @@
 ## 概要
 
 - Salesforce CLI (`npx sf`) を呼び出して Salesforce 組織からデータを取得
-- 取得対象はオブジェクト一覧、項目一覧、フロー一覧、FlowDefinition、CronTrigger
+- 取得対象はオブジェクト一覧、項目一覧、sObject一覧、フロー一覧、FlowDefinition、CronTrigger
 - Windows では Git Bash がある場合、`bash.exe -lc` 経由で `npx sf` を実行
-- `--only-flows` でフロー関連データと CronTrigger のみ取得
+- `--only-flows` でオブジェクト・項目一覧をスキップし、sObject一覧・フロー関連データ・CronTrigger を取得
 
 ## 事前準備
 
@@ -19,9 +19,21 @@
 
 ```json
 {
-  "alias": "dev"
+  "alias": "dev",
+  "objectBlackList": ["Account", "Contact"],
+  "queryJobs": [
+    {
+      "fileName": "flowDefinitions.json",
+      "query": "SELECT Id, DeveloperName, MasterLabel FROM FlowDefinition ORDER BY DeveloperName",
+      "tooling": true,
+      "label": "FlowDefinition一覧"
+    }
+  ]
 }
 ```
+
+`objectBlackList`: 項目一覧取得時に除外するオブジェクト名の配列
+`queryJobs`: 取得するデータのカスタマイズ（追加・削除・クエリ修正が可能）
 
 ## インストール
 
@@ -37,7 +49,7 @@ npm install
 npx ts-node src/index.ts
 ```
 
-フロー関連データと CronTrigger のみ取得する:
+フロー関連データ・sObject一覧・CronTrigger のみ取得する:
 
 ```bash
 npx ts-node src/index.ts --only-flows
@@ -49,6 +61,7 @@ npx ts-node src/index.ts --only-flows
 
 - `output/objects.json` - 取得したオブジェクト一覧
 - `output/fields.json` - 取得した項目一覧
+- `output/sobject-list.json` - 取得した sObject 一覧
 - `output/flowDefinitions.json` - 取得した FlowDefinition 一覧
 - `output/flows.json` - 取得した FlowRecord 一覧
 - `output/cronJobs.json` - 取得した CronTrigger 一覧
