@@ -37,7 +37,6 @@ async function main() {
   const retrieveSalesforce = new RetrieveSalesforce(
     sfClient,
     config,
-    outputDir,
     sfClient as IFileSaver,
   );
   retrieveSalesforce.run(onlyFlows);

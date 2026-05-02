@@ -12,14 +12,12 @@ export class RetrieveSalesforce {
   constructor(
     readonly sfClient: SfClient,
     readonly config: any,
-    readonly outputDir: string,
     private fileSaver: IFileSaver,
   ) {}
 
   async run(onlyFlows: boolean) {
     const sfClient = this.sfClient;
     const config = this.config;
-    const outputDir = this.outputDir;
     const objectBlackList = new Set<string>(
       normalizeToArray(config.objectBlackList).filter(
         (value): value is string => typeof value === "string",
@@ -80,10 +78,8 @@ export class RetrieveSalesforce {
             }),
           );
 
-          count += chunk.length;
-          process.stdout.write(
-            `\r取得進捗: ${count} / ${filteredObjectList.length} 完了`,
-          );
+            count += chunk.length;
+            console.log(`取得進捗: ${count} / ${filteredObjectList.length} 完了`);
         }
         console.log(""); // 改行
 
