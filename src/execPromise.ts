@@ -133,10 +133,12 @@ export const loadConfig = (configPath: string): any => {
 export class SfClient implements IFileSaver {
   private alias: string;
   private outputDir: string;
+  private retrievedAt: Date;
 
-  constructor(alias: string, outputDir: string) {
+  constructor(alias: string, outputDir: string, retrievedAt: Date) {
     this.alias = alias;
     this.outputDir = outputDir;
+    this.retrievedAt = retrievedAt;
   }
 
   async sfQuery<T = any>(
@@ -173,8 +175,7 @@ export class SfClient implements IFileSaver {
   ) {
     const queryRes = await this.sfQuery(query, tooling);
     const parsed = queryRes.parsed;
-    const outputPath = path.join(this.outputDir, fileName);
-    fs.writeFileSync(outputPath, JSON.stringify(parsed, null, 2));
+    this.saveJson(fileName, parsed);
     return parsed;
   }
 
@@ -185,15 +186,21 @@ export class SfClient implements IFileSaver {
       json: true,
     });
     const parsed = JSON.parse(result.stdout);
-    const outputPath = path.join(this.outputDir, fileName);
-    fs.writeFileSync(outputPath, JSON.stringify(parsed, null, 2));
+    this.saveJson(fileName, parsed);
     console.log(`sObject一覧を取得し、output/${fileName} に保存しました。`);
     return parsed;
   }
 
   saveJson(fileName: string, data: any) {
+    const dataToSave = {
+      meta: {
+        retrievedAt: this.retrievedAt.toLocaleString(),
+        alias: this.alias
+      },
+      data: data
+    };
     const outputPath = path.join(this.outputDir, fileName);
-    fs.writeFileSync(outputPath, JSON.stringify(data, null, 2));
+    fs.writeFileSync(outputPath, JSON.stringify(dataToSave, null, 2));
   }
 
   static async checkSfInstalled(): Promise<void> {

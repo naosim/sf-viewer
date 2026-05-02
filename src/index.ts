@@ -32,7 +32,8 @@ async function main() {
     fs.mkdirSync(outputDir, { recursive: true });
   }
 
-  const sfClient = new SfClient(alias, outputDir);
+  const retrievedAt = new Date();
+  const sfClient = new SfClient(alias, outputDir, retrievedAt);
 
   const retrieveSalesforce = new RetrieveSalesforce(
     sfClient,
