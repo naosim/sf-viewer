@@ -90,14 +90,13 @@ export interface SfQueryResult<T = any> {
 
 export const loadConfig = (configPath: string): any => {
   if (!fs.existsSync(configPath)) {
-    console.error(`エラー: config.json が見つかりません。パス: ${configPath}`);
-    process.exit(1);
+    throw new Error(`エラー: config.json が見つかりません。パス: ${configPath}`);
   }
   try {
-    return JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    const content = fs.readFileSync(configPath, 'utf8');
+    return JSON.parse(content);
   } catch (e) {
-    console.error('エラー: config.json のフォーマットが不正です。');
-    process.exit(1);
+    throw new Error('エラー: config.json のフォーマットが不正です。');
   }
 };
 
@@ -146,8 +145,7 @@ export class SfClient {
     try {
       await runSf(['--version']);
     } catch (error) {
-      console.error('エラー: sf コマンドが見つかりません。Salesforce CLIをインストールしてください。');
-      process.exit(1);
+      throw new Error('エラー: sf コマンドが見つかりません。Salesforce CLIをインストールしてください。');
     }
   }
 }

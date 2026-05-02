@@ -51,8 +51,7 @@ async function main() {
   const alias = config.alias;
   const queryJobs = normalizeToArray(config.queryJobs);
   if (!alias) {
-    console.error("エラー: config.json に alias が設定されていません。");
-    process.exit(1);
+    throw new Error("エラー: config.json に alias が設定されていません。");
   }
 
   const objectBlackList = new Set<string>(
@@ -70,7 +69,7 @@ async function main() {
 
   const sfClient = new SfClient(alias, outputDir);
 
-  try {
+  {
     if (!onlyFlows) {
       try {
         // 3. オブジェクト一覧の取得
@@ -141,11 +140,7 @@ async function main() {
           "すべての項目一覧を取得し、output/fields.json に保存しました。",
         );
       } catch (error: any) {
-        console.error("データ取得中にエラーが発生しました:");
-        if (error.message) console.error("Message:", error.message);
-        if (error.stdout) console.error("STDOUT:", error.stdout);
-        if (error.stderr) console.error("STDERR:", error.stderr);
-        process.exit(1);
+        throw error;
       }
     }
 
@@ -178,13 +173,13 @@ async function main() {
     }
 
     console.log("--- 処理1: 完了 ---");
-  } catch (error: any) {
-    console.error("データ取得中にエラーが発生しました:");
-    if (error.message) console.error("Message:", error.message);
-    if (error.stdout) console.error("STDOUT:", error.stdout);
-    if (error.stderr) console.error("STDERR:", error.stderr);
-    process.exit(1);
   }
 }
 
-main();
+main().catch((error: any) => {
+  console.error("データ取得中にエラーが発生しました:");
+  if (error.message) console.error("Message:", error.message);
+  if (error.stdout) console.error("STDOUT:", error.stdout);
+  if (error.stderr) console.error("STDERR:", error.stderr);
+  process.exit(1);
+});
