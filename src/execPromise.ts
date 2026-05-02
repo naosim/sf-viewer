@@ -119,3 +119,12 @@ export const saveSobjectListFile = async (outputDir: string, alias: string, file
   console.log(`sObject一覧を取得し、output/${fileName} に保存しました。`);
   return parsed;
 };
+
+export const checkSfInstalled = async (): Promise<void> => {
+  try {
+    await runSf(['--version']);
+  } catch (error) {
+    console.error('エラー: sf コマンドが見つかりません。Salesforce CLIをインストールしてください。');
+    process.exit(1);
+  }
+};
