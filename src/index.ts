@@ -93,20 +93,19 @@ async function main() {
         // 4. 項目一覧の取得
         console.log('項目一覧を取得中...');
         const objectList = objectsData.result.records;
+        // ブラックリストでフィルタリング
+        const filteredObjectList = objectList.filter((obj: any) => !objectBlackList.has(obj.QualifiedApiName));
         const allFieldsData: any[] = [];
 
         let count = 0;
         
         // 連続でAPIを叩くと時間がかかるため、10件ずつの並行処理（チャンク）で実行
         const chunkSize = 10;
-        for (let i = 0; i < objectList.length; i += chunkSize) {
-          const chunk = objectList.slice(i, i + chunkSize);
+        for (let i = 0; i < filteredObjectList.length; i += chunkSize) {
+          const chunk = filteredObjectList.slice(i, i + chunkSize);
           
           await Promise.all(chunk.map(async (obj: any) => {
             const objName = obj.QualifiedApiName;
-            if (objectBlackList.has(objName)) {
-              return;
-            }
 
             const fieldsQuery = `SELECT QualifiedApiName, Label, DataType, Length FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = '${objName}' ORDER BY QualifiedApiName`;
             
@@ -124,7 +123,7 @@ async function main() {
           }));
           
           count += chunk.length;
-          process.stdout.write(`\r取得進捗: ${count} / ${objectList.length} 完了`);
+          process.stdout.write(`\r取得進捗: ${count} / ${filteredObjectList.length} 完了`);
         }
         console.log(''); // 改行
 
