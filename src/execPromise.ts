@@ -302,14 +302,14 @@ export class SfClient implements IFileSaver {
       this.outputDir,
       SfClient.objectsJsonFileName,
       SfClient.fieldsJsonFileName,
-    );
+    ).init();
   }
 
   createSobjectRepository() {
     return new SobjectRepository(
       this.outputDir,
       SfClient.sobjectListJsonFileName,
-    );
+    ).init(this);
   }
 
   async checkSfInstalled(): Promise<void> {
@@ -366,7 +366,10 @@ export class ObjectRepository {
   }
 
   getUndefinedColumns(objectName: string, columnNames: string[]): string[] {
-    const objFields = this.fields.find((f: any) => f.objectName === objectName);
+    const fieldsArray = this.fields?.data || this.fields;
+    const objFields = Array.isArray(fieldsArray)
+      ? fieldsArray.find((f: any) => f.objectName === objectName)
+      : undefined;
     if (!objFields) {
       return columnNames;
     }
@@ -383,13 +386,15 @@ export class SobjectRepository {
   obj?: any;
   list?: any[];
   qualifiedApiNameSet?: Set<string>;
+  private sfClient?: SfClient;
 
   constructor(
     readonly outputDir: string,
     readonly fileName: string,
   ) {}
 
-  init() {
+  init(sfClient?: SfClient) {
+    this.sfClient = sfClient;
     this.loadJsonData();
     return this;
   }
@@ -430,9 +435,38 @@ export class SobjectRepository {
     if (!this.obj) {
       this.loadJsonData();
     }
-    // console.log("obj", this.obj);
-    // console.log("list", this.list);
-    // console.log("qualifiedApiNameSet", this.qualifiedApiNameSet);
     return this.qualifiedApiNameSet!.has(qualifiedApiName);
+  }
+
+  async getUndefinedColumns(
+    sobjectName: string,
+    columnNames: string[],
+  ): Promise<string[]> {
+    const fileName = `${sobjectName}-describe.json`;
+    const filePath = path.join(this.outputDir, fileName);
+
+    let describeData: any;
+
+    if (fs.existsSync(filePath)) {
+      describeData = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    } else if (this.sfClient) {
+      describeData = await this.sfClient.saveSobjectDescribeFile(
+        sobjectName,
+        fileName,
+      );
+    } else {
+      return columnNames;
+    }
+
+    const fieldsData =
+      describeData.data?.result?.fields ||
+      describeData.result?.fields ||
+      describeData.fields ||
+      [];
+    const existingColumns = new Set(
+      fieldsData.map((f: any) => f.name),
+    );
+
+    return columnNames.filter((col) => !existingColumns.has(col));
   }
 }

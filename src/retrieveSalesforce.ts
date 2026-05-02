@@ -57,6 +57,37 @@ export class RetrieveSalesforce {
     private fileSaver: IFileSaver,
   ) {}
 
+  async buildErrorMessage(
+    job: { query: string; label: string },
+    objName: string | null,
+    dataType: string,
+    err: any,
+    objectRepository: ObjectRepository,
+    sobjectRepository: SobjectRepository,
+  ): Promise<string> {
+    let errorMsg = `\n警告: ${job.label} の取得に失敗しました。`;
+    if (dataType === "object" && objName) {
+      const columnNames = getColumnNamesFromQuery(job.query);
+      const undefinedCols = objectRepository.getUndefinedColumns(
+        objName,
+        columnNames,
+      );
+      if (undefinedCols.length > 0) {
+        errorMsg += `\n未定義のカラム: ${undefinedCols.join(", ")}`;
+      }
+    } else if (dataType === "metadata" && objName) {
+      const columnNames = getColumnNamesFromQuery(job.query);
+      const undefinedCols = await sobjectRepository.getUndefinedColumns(
+        objName,
+        columnNames,
+      );
+      if (undefinedCols.length > 0) {
+        errorMsg += `\n未定義のカラム: ${undefinedCols.join(", ")}`;
+      }
+    }
+    return errorMsg;
+  }
+
   async run(onlyFlows: boolean) {
     const sfClient = this.sfClient;
     const config = this.config;
@@ -95,10 +126,10 @@ export class RetrieveSalesforce {
     }
 
     // sObject一覧の取得 (ファイルから読み込み)
-    objectRepository = sfClient.createObjectRepository().init();
-    sobjectRepository = sfClient.createSobjectRepository().init();
+    objectRepository = sfClient.createObjectRepository();
+    sobjectRepository = sfClient.createSobjectRepository();
 
-    for (const job of queryJobs) {
+    for await (const job of queryJobs) {
       console.log(`${job.label} を取得中...`);
       const objName = getObjectNameFromQuery(job.query);
       let dataType: string = "other";
@@ -121,17 +152,14 @@ export class RetrieveSalesforce {
           `${job.label} を取得し、output/${job.fileName} に保存しました。（計 ${totalSize} 件）`,
         );
       } catch (err: any) {
-        let errorMsg = `\n警告: ${job.label} の取得に失敗しました。`;
-        if (dataType === "object" && objName) {
-          const columnNames = getColumnNamesFromQuery(job.query);
-          const undefinedCols = objectRepository.getUndefinedColumns(
-            objName,
-            columnNames,
-          );
-          if (undefinedCols.length > 0) {
-            errorMsg += `\n未定義のカラム: ${undefinedCols.join(", ")}`;
-          }
-        }
+        const errorMsg = await this.buildErrorMessage(
+          job,
+          objName,
+          dataType,
+          err,
+          objectRepository,
+          sobjectRepository,
+        );
         console.error(errorMsg);
         if (err.stdout) console.error("STDOUT:", err.stdout);
         else console.error("Error:", err.message);

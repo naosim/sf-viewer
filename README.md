@@ -66,6 +66,14 @@ npx ts-node src/index.ts --only-flows
 - `output/flows.json` - 取得した FlowRecord 一覧
 - `output/cronJobs.json` - 取得した CronTrigger 一覧
 
+## テストの実行方法
+
+```bash
+npm test
+```
+
+テストは `test/` ディレクトリに配置されています。
+
 ## 補足
 
 - `Flow` オブジェクトではなく、実行中/実行可能なフローのレコード情報を `FlowRecord` から取得する仕様です
