@@ -364,6 +364,19 @@ export class ObjectRepository {
   isObject(objectName: string) {
     return this.objectNames.has(objectName);
   }
+
+  getUndefinedColumns(objectName: string, columnNames: string[]): string[] {
+    const objFields = this.fields.find((f: any) => f.objectName === objectName);
+    if (!objFields) {
+      return columnNames;
+    }
+
+    const existingColumns = new Set(
+      objFields.fields.map((f: any) => f.QualifiedApiName),
+    );
+
+    return columnNames.filter((col) => !existingColumns.has(col));
+  }
 }
 
 export class SobjectRepository {

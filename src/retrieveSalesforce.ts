@@ -100,19 +100,16 @@ export class RetrieveSalesforce {
 
     for (const job of queryJobs) {
       console.log(`${job.label} を取得中...`);
-      try {
-        const objName = getObjectNameFromQuery(job.query);
-        let dataType: string = "other";
-        if (objName) {
-          if (objectRepository.isObject(objName)) {
-            dataType = "object";
-          } else if (
-            sobjectRepository &&
-            sobjectRepository.isSobject(objName)
-          ) {
-            dataType = "metadata";
-          }
+      const objName = getObjectNameFromQuery(job.query);
+      let dataType: string = "other";
+      if (objName) {
+        if (objectRepository.isObject(objName)) {
+          dataType = "object";
+        } else if (sobjectRepository.isSobject(objName)) {
+          dataType = "metadata";
         }
+      }
+      try {
         const parsed = await sfClient.saveQueryJsonFile(
           job.fileName,
           job.query,
@@ -124,7 +121,18 @@ export class RetrieveSalesforce {
           `${job.label} を取得し、output/${job.fileName} に保存しました。（計 ${totalSize} 件）`,
         );
       } catch (err: any) {
-        console.error(`\n警告: ${job.label} の取得に失敗しました。`);
+        let errorMsg = `\n警告: ${job.label} の取得に失敗しました。`;
+        if (dataType === "object" && objName) {
+          const columnNames = getColumnNamesFromQuery(job.query);
+          const undefinedCols = objectRepository.getUndefinedColumns(
+            objName,
+            columnNames,
+          );
+          if (undefinedCols.length > 0) {
+            errorMsg += `\n未定義のカラム: ${undefinedCols.join(", ")}`;
+          }
+        }
+        console.error(errorMsg);
         if (err.stdout) console.error("STDOUT:", err.stdout);
         else console.error("Error:", err.message);
       }
