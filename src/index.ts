@@ -3,15 +3,12 @@ import * as path from "path";
 import { SfClient, loadConfig, IFileSaver } from "./sfUtil";
 import { RetrieveSalesforce } from "./retrieveSalesforce";
 
+const formatTimestamp = (date: Date): string => {
+  return `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}${String(date.getDate()).padStart(2, "0")}_${String(date.getHours()).padStart(2, "0")}${String(date.getMinutes()).padStart(2, "0")}${String(date.getSeconds()).padStart(2, "0")}`;
+};
+
 async function main() {
-  const onlyFlows =
-    process.argv.includes("--only-flows") ||
-    process.argv.includes("--flow-only");
-  if (onlyFlows) {
-    console.log("--- 処理1: Flow取得以降のみを実行します ---");
-  } else {
-    console.log("--- 処理1: Salesforceからのデータ取得を開始します ---");
-  }
+  console.log("--- 処理1: Salesforceからのデータ取得を開始します ---");
 
   // 2. config.jsonの読み込み
   const configPath = path.join(__dirname, "../config.json");
@@ -38,8 +35,6 @@ async function main() {
     prevAlias = prevMeta.alias;
   }
 
-  const retrievedAt = new Date();
-
   if (prevRetrievedAt) {
     const backupDir = path.join(outputDir, "backup");
     if (!fs.existsSync(backupDir)) {
@@ -49,7 +44,7 @@ async function main() {
       .readdirSync(outputDir)
       .filter((f) => f !== "backup");
     if (filesInOutput.length > 0) {
-      const timestamp = `${prevRetrievedAt.getFullYear()}${String(prevRetrievedAt.getMonth() + 1).padStart(2, "0")}${String(prevRetrievedAt.getDate()).padStart(2, "0")}_${String(prevRetrievedAt.getHours()).padStart(2, "0")}${String(prevRetrievedAt.getMinutes()).padStart(2, "0")}${String(prevRetrievedAt.getSeconds()).padStart(2, "0")}`;
+      const timestamp = formatTimestamp(prevRetrievedAt);
       const backupPath = path.join(backupDir, `${timestamp}_${prevAlias}`);
       fs.mkdirSync(backupPath, { recursive: true });
       for (const file of filesInOutput) {
@@ -64,6 +59,7 @@ async function main() {
     }
   }
 
+  const retrievedAt = new Date();
   const meta = {
     alias: alias,
     retrievedAt: retrievedAt.toLocaleString(),
@@ -78,7 +74,7 @@ async function main() {
     config,
     sfClient as IFileSaver,
   );
-  retrieveSalesforce.run(onlyFlows);
+  retrieveSalesforce.run();
 }
 
 main().catch((error: any) => {

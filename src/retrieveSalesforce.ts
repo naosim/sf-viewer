@@ -88,46 +88,51 @@ export class RetrieveSalesforce {
     return errorMsg;
   }
 
-  async run(onlyFlows: boolean) {
-    const sfClient = this.sfClient;
+  async run() {
     const config = this.config;
-    let objectRepository: ObjectRepository;
-    let sobjectRepository: SobjectRepository;
-    // const objectBlackList = new Set<string>(
-    //   normalizeToArray(config.objectBlackList).filter(
-    //     (value): value is string => typeof value === "string",
-    //   ),
-    // );
     const queryJobs = normalizeToArray(config.queryJobs);
 
-    if (!onlyFlows) {
-      try {
-        // 3. オブジェクト一覧の取得
-        console.log("オブジェクト一覧を取得中...");
-        const objectsQuery = `SELECT QualifiedApiName, Label, DeveloperName FROM EntityDefinition WHERE IsCustomizable = true ORDER BY QualifiedApiName`;
-        const objectsData = await sfClient.saveQueryJsonFile(
-          "objects.json",
-          objectsQuery,
-        );
-        console.log(
-          `オブジェクト一覧を取得し、output/objects.json に保存しました。（計 ${objectsData.result.totalSize} 件）`,
-        );
+    const { objectRepository, sobjectRepository } =
+      await this.fetchBaseData();
 
-        // 4. 項目一覧の取得
-        const objectBlackListArray = normalizeToArray(
-          config.objectBlackList,
-        ).filter((value): value is string => typeof value === "string");
-        await sfClient.saveFieldsFile(objectBlackListArray);
+    await this.runQueryJobs(queryJobs, objectRepository, sobjectRepository);
 
-        await sfClient.saveSobjectListFile();
-      } catch (error: any) {
-        throw error;
-      }
-    }
+    console.log("--- 処理1: 完了 ---");
+  }
 
-    // sObject一覧の取得 (ファイルから読み込み)
-    objectRepository = sfClient.createObjectRepository();
-    sobjectRepository = sfClient.createSobjectRepository();
+  async fetchBaseData() {
+    const sfClient = this.sfClient;
+    const config = this.config;
+
+    console.log("オブジェクト一覧を取得中...");
+    const objectsQuery = `SELECT QualifiedApiName, Label, DeveloperName FROM EntityDefinition WHERE IsCustomizable = true ORDER BY QualifiedApiName`;
+    const objectsData = await sfClient.saveQueryJsonFile(
+      "objects.json",
+      objectsQuery,
+    );
+    console.log(
+      `オブジェクト一覧を取得し、output/objects.json に保存しました。（計 ${objectsData.result.totalSize} 件）`,
+    );
+
+    const objectBlackListArray = normalizeToArray(
+      config.objectBlackList,
+    ).filter((value): value is string => typeof value === "string");
+    await sfClient.saveFieldsFile(objectBlackListArray);
+
+    await sfClient.saveSobjectListFile();
+
+    const objectRepository = sfClient.createObjectRepository();
+    const sobjectRepository = sfClient.createSobjectRepository();
+
+    return { objectRepository, sobjectRepository };
+  }
+
+  async runQueryJobs(
+    queryJobs: any[],
+    objectRepository: ObjectRepository,
+    sobjectRepository: SobjectRepository,
+  ) {
+    const sfClient = this.sfClient;
 
     for await (const job of queryJobs) {
       console.log(`${job.label} を取得中...`);
@@ -165,7 +170,5 @@ export class RetrieveSalesforce {
         else console.error("Error:", err.message);
       }
     }
-
-    console.log("--- 処理1: 完了 ---");
   }
 }

@@ -7,7 +7,6 @@
 - Salesforce CLI (`npx sf`) を呼び出して Salesforce 組織からデータを取得
 - 取得対象はオブジェクト一覧、項目一覧、sObject一覧、フロー一覧、FlowDefinition、CronTrigger
 - Windows では Git Bash がある場合、`bash.exe -lc` 経由で `npx sf` を実行
-- `--only-flows` でオブジェクト・項目一覧をスキップし、sObject一覧・フロー関連データ・CronTrigger を取得
 
 ## 事前準備
 
@@ -47,12 +46,6 @@ npm install
 
 ```bash
 npx ts-node src/index.ts
-```
-
-フロー関連データ・sObject一覧・CronTrigger のみ取得する:
-
-```bash
-npx ts-node src/index.ts --only-flows
 ```
 
 ## 出力ファイル

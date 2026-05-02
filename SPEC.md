@@ -34,8 +34,6 @@ sf-viewerは、Salesforce CLI (`sf`) を通じてSalesforce組織からデータ
   - `output/flowDefinitions.json`
   - `output/flows.json`
   - `output/cronJobs.json`
-- オプション `--only-flows` を指定すると、オブジェクト一覧および項目一覧の取得をスキップし、sObject一覧・Flow関連・CronTriggerを取得する
-  （※現在の実装では `--only-flows` 指定時もsObject一覧は常に取得される）
 - `config.json` によるカスタマイズ
   - `objectBlackList`: 項目一覧取得時に除外するオブジェクト名の配列
   - `queryJobs`: 取得するデータのカスタマイズ（追加・削除・クエリ修正が可能）。各要素は以下のプロパティを持つ:
@@ -53,11 +51,6 @@ sf-viewerは、Salesforce CLI (`sf`) を通じてSalesforce組織からデータ
 ## 実行
 ```
 npx ts-node src/index.ts
-```
-
-### フロー関連のみ実行
-```
-npx ts-node src/index.ts --only-flows
 ```
 
 
