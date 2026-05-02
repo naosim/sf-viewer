@@ -3,7 +3,7 @@ import {
   IFileSaver,
   SobjectRepository,
   ObjectRepository,
-} from "./execPromise";
+} from "./sfUtil";
 
 const normalizeToArray = <T>(value: T | T[] | undefined | null): T[] => {
   if (value === undefined || value === null) return [];

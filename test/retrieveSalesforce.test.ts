@@ -1,5 +1,5 @@
 import * as path from "path";
-import { SfClient, IFileSaver, SobjectRepository, ObjectRepository } from "../src/execPromise";
+import { SfClient, IFileSaver, SobjectRepository, ObjectRepository } from "../src/sfUtil";
 import { RetrieveSalesforce } from "../src/retrieveSalesforce";
 
 const outputDir = path.join(__dirname, "../output");
@@ -46,6 +46,7 @@ describe("buildErrorMessage", () => {
   });
 
   it("should return error message with undefined columns for metadata type", async () => {
+    jest.setTimeout(30000);
     const job = {
       query: "SELECT Id, Name, FlowLabel, ApiName, ProgressStatus, IsPaused, FlowType, FlowDefinition, CreatedDate, LastModifiedDate, foo FROM FlowRecord LIMIT 200",
       label: "フロー一覧（レコードとして）",

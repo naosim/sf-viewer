@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
-import { SfClient, loadConfig, IFileSaver } from "./execPromise";
+import { SfClient, loadConfig, IFileSaver } from "./sfUtil";
 import { RetrieveSalesforce } from "./retrieveSalesforce";
 
 async function main() {
