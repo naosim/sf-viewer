@@ -24,3 +24,9 @@ flowrecord_desc.json
 .env
 
 force-app/
+
+# Project config (not for commit)
+sfdx-project.json
+
+# Personal memo
+memo.md
