@@ -1,8 +1,13 @@
-import { SfClient, IFileSaver } from "./execPromise";
+import { SfClient, IFileSaver, SobjectRepository } from "./execPromise";
 
 const normalizeToArray = <T>(value: T | T[] | undefined | null): T[] => {
   if (value === undefined || value === null) return [];
   return Array.isArray(value) ? value : [value];
+};
+
+const getObjectNameFromQuery = (query: string): string | null => {
+  const fromMatch = query.match(/\bFROM\s+(\w+)/i);
+  return fromMatch ? fromMatch[1] : null;
 };
 
 /**
@@ -18,6 +23,8 @@ export class RetrieveSalesforce {
   async run(onlyFlows: boolean) {
     const sfClient = this.sfClient;
     const config = this.config;
+    let objectNames: Set<string> = new Set();
+    let sobjectRepository: SobjectRepository | undefined;
     const objectBlackList = new Set<string>(
       normalizeToArray(config.objectBlackList).filter(
         (value): value is string => typeof value === "string",
@@ -37,6 +44,11 @@ export class RetrieveSalesforce {
         console.log(
           `オブジェクト一覧を取得し、output/objects.json に保存しました。（計 ${objectsData.result.totalSize} 件）`,
         );
+
+        // objectNames セットを構築
+        if (objectsData && objectsData.result && objectsData.result.records) {
+          objectNames = new Set(objectsData.result.records.map((obj: any) => obj.QualifiedApiName));
+        }
 
         // 4. 項目一覧の取得
         console.log("項目一覧を取得中...");
@@ -78,8 +90,8 @@ export class RetrieveSalesforce {
             }),
           );
 
-            count += chunk.length;
-            console.log(`取得進捗: ${count} / ${filteredObjectList.length} 完了`);
+          count += chunk.length;
+          console.log(`取得進捗: ${count} / ${filteredObjectList.length} 完了`);
         }
         console.log(""); // 改行
 
@@ -93,22 +105,34 @@ export class RetrieveSalesforce {
       }
     }
 
-    // sObject一覧の取得
+    // sObject一覧の取得 (ファイルから読み込み)
+    const sobjectListJsonFileName = "sobject-list.json";
     try {
-      await sfClient.saveSobjectListFile();
+      sobjectRepository = sfClient.createSobjectRepository(sobjectListJsonFileName);
     } catch (err: any) {
-      console.error(`\n警告: sObject一覧の取得に失敗しました。`);
+      console.error(`\n警告: sObject一覧の読み込みに失敗しました。`);
       if (err.stdout) console.error("STDOUT:", err.stdout);
       else console.error("Error:", err.message);
+      throw err; // エラーを再スロー（ユーザー要望）
     }
 
     for (const job of queryJobs) {
       console.log(`${job.label} を取得中...`);
       try {
+        const objName = getObjectNameFromQuery(job.query);
+        let dataType: string = "other";
+        if (objName) {
+          if (objectNames.has(objName)) {
+            dataType = "object";
+          } else if (sobjectRepository && sobjectRepository.isSobject(objName)) {
+            dataType = "metadata";
+          }
+        }
         const parsed = await sfClient.saveQueryJsonFile(
           job.fileName,
           job.query,
           job.tooling,
+          dataType
         );
         const totalSize = parsed.result ? parsed.result.totalSize : 0;
         console.log(

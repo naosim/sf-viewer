@@ -172,10 +172,11 @@ export class SfClient implements IFileSaver {
     fileName: string,
     query: string,
     tooling: boolean = false,
+    dataType?: string,
   ) {
     const queryRes = await this.sfQuery(query, tooling);
     const parsed = queryRes.parsed;
-    this.saveJson(fileName, parsed);
+    this.saveJson(fileName, parsed, dataType);
     return parsed;
   }
 
@@ -191,16 +192,23 @@ export class SfClient implements IFileSaver {
     return parsed;
   }
 
-  saveJson(fileName: string, data: any) {
-    const dataToSave = {
+  saveJson(fileName: string, data: any, dataType?: string) {
+    const dataToSave: any = {
       meta: {
         retrievedAt: this.retrievedAt.toLocaleString(),
-        alias: this.alias
+        alias: this.alias,
       },
-      data: data
+      data: data,
     };
+    if (dataType) {
+      dataToSave.meta.dataType = dataType;
+    }
     const outputPath = path.join(this.outputDir, fileName);
     fs.writeFileSync(outputPath, JSON.stringify(dataToSave, null, 2));
+  }
+
+  createSobjectRepository(fileName: string) {
+    return new SobjectRepository(this.outputDir, fileName);
   }
 
   static async checkSfInstalled(): Promise<void> {
@@ -211,5 +219,60 @@ export class SfClient implements IFileSaver {
         "エラー: sf コマンドが見つかりません。Salesforce CLIをインストールしてください。",
       );
     }
+  }
+}
+
+export class SobjectRepository {
+  private outputDir: string;
+  private fileName: string;
+  obj?: any;
+  list?: any[];
+  qualifiedApiNameSet?: Set<string>;
+
+  constructor(outputDir: string, fileName: string) {
+    this.outputDir = outputDir;
+    this.fileName = fileName;
+  }
+
+  loadJsonData() {
+    const outputPath = path.join(this.outputDir, this.fileName);
+    var sobjectListData = JSON.parse(fs.readFileSync(outputPath, "utf8"));
+    this.obj = sobjectListData;
+    if (
+      sobjectListData &&
+      sobjectListData.result &&
+      sobjectListData.result.records
+    ) {
+      this.list = sobjectListData.result.records;
+    } else if (
+      sobjectListData &&
+      sobjectListData.result &&
+      Array.isArray(sobjectListData.result)
+    ) {
+      this.list = sobjectListData.result;
+    } else if (Array.isArray(sobjectListData)) {
+      this.list = sobjectListData;
+    } else if (
+      sobjectListData &&
+      sobjectListData.data &&
+      sobjectListData.data.result &&
+      Array.isArray(sobjectListData.data.result)
+    ) {
+      this.list = sobjectListData.data.result;
+    }
+
+    this.qualifiedApiNameSet = new Set(
+      this.list!.map((item: any) => item.QualifiedApiName || item),
+    );
+  }
+
+  isSobject(qualifiedApiName: string) {
+    if (!this.obj) {
+      this.loadJsonData();
+    }
+    // console.log("obj", this.obj);
+    // console.log("list", this.list);
+    // console.log("qualifiedApiNameSet", this.qualifiedApiNameSet);
+    return this.qualifiedApiNameSet!.has(qualifiedApiName);
   }
 }
