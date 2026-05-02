@@ -1,11 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
-import {
-  sfQuery,
-  saveQueryJsonFile,
-  saveSobjectListFile,
-  checkSfInstalled,
-} from "./execPromise";
+import { SfClient, loadConfig } from "./execPromise";
 
 const normalizeNodeId = (value: string): string => {
   return `node_${value.replace(/[^a-zA-Z0-9_]/g, "_")}`;
@@ -47,22 +42,11 @@ async function main() {
   }
 
   // 1. sfコマンドの有無を確認
-  await checkSfInstalled();
+  await SfClient.checkSfInstalled();
 
   // 2. config.jsonの読み込み
   const configPath = path.join(__dirname, "../config.json");
-  if (!fs.existsSync(configPath)) {
-    console.error(`エラー: config.json が見つかりません。パス: ${configPath}`);
-    process.exit(1);
-  }
-
-  let config;
-  try {
-    config = JSON.parse(fs.readFileSync(configPath, "utf8"));
-  } catch (e) {
-    console.error("エラー: config.json のフォーマットが不正です。");
-    process.exit(1);
-  }
+  const config = loadConfig(configPath);
 
   const alias = config.alias;
   const queryJobs = normalizeToArray(config.queryJobs);
@@ -84,16 +68,16 @@ async function main() {
     fs.mkdirSync(outputDir, { recursive: true });
   }
 
+  const sfClient = new SfClient(alias, outputDir);
+
   try {
     if (!onlyFlows) {
       try {
         // 3. オブジェクト一覧の取得
         console.log("オブジェクト一覧を取得中...");
         const objectsQuery = `SELECT QualifiedApiName, Label, DeveloperName FROM EntityDefinition WHERE IsCustomizable = true ORDER BY QualifiedApiName`;
-        const objectsData = await saveQueryJsonFile(
-          outputDir,
+        const objectsData = await sfClient.saveQueryJsonFile(
           "objects.json",
-          alias,
           objectsQuery,
         );
         console.log(
@@ -123,7 +107,7 @@ async function main() {
               const fieldsQuery = `SELECT QualifiedApiName, Label, DataType, Length FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = '${objName}' ORDER BY QualifiedApiName`;
 
               try {
-                const fieldsRes = await sfQuery(alias, fieldsQuery);
+                const fieldsRes = await sfClient.sfQuery(fieldsQuery);
                 const fieldsParsed = fieldsRes.parsed;
                 allFieldsData.push({
                   objectName: objName,
@@ -167,7 +151,7 @@ async function main() {
 
     // sObject一覧の取得
     try {
-      await saveSobjectListFile(outputDir, alias);
+      await sfClient.saveSobjectListFile();
     } catch (err: any) {
       console.error(`\n警告: sObject一覧の取得に失敗しました。`);
       if (err.stdout) console.error("STDOUT:", err.stdout);
@@ -177,10 +161,8 @@ async function main() {
     for (const job of queryJobs) {
       console.log(`${job.label} を取得中...`);
       try {
-        const parsed = await saveQueryJsonFile(
-          outputDir,
+        const parsed = await sfClient.saveQueryJsonFile(
           job.fileName,
-          alias,
           job.query,
           job.tooling,
         );

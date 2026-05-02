@@ -20,7 +20,7 @@ export const execPromise = (cmd: string, args: string[], useShell: boolean = use
     const shellCmd = cmd === 'sf' ? 'npx' : cmd;
     let actualCmd: string;
     let actualArgs: string[];
-
+ 
     if (useShell && useGitBash) {
       actualCmd = shellCmd;
       actualArgs = cmd === 'sf' ? ['sf', ...args] : args;
@@ -31,7 +31,7 @@ export const execPromise = (cmd: string, args: string[], useShell: boolean = use
       actualCmd = cmd === 'sf' ? 'npx' : cmd;
       actualArgs = cmd === 'sf' ? ['sf', ...args] : args;
     }
-
+ 
     if (useShell && useGitBash) {
       const commandString = [actualCmd, ...actualArgs].map(shellEscape).join(' ');
       console.log(`[sf command] ${commandString} (git-bash)`);
@@ -47,7 +47,7 @@ export const execPromise = (cmd: string, args: string[], useShell: boolean = use
       });
       return;
     }
-
+ 
     const formatted = [actualCmd, ...actualArgs.map(arg => /\s/.test(arg) ? `"${arg}"` : arg)].join(' ');
     console.log(`[sf command] ${formatted}`);
     execFile(actualCmd, actualArgs, { maxBuffer: 1024 * 1024 * 50 }, (error, stdout, stderr) => {
@@ -62,69 +62,92 @@ export const execPromise = (cmd: string, args: string[], useShell: boolean = use
     });
   });
 };
-
+ 
 export interface SfOptions {
   alias?: string;
   json?: boolean;
   useShell?: boolean;
 }
-
+ 
 export const runSf = (args: string[], options: SfOptions = {}): Promise<{ stdout: string; stderr: string }> => {
   const sfArgs = [...args];
-
+ 
   if (options.alias) {
     sfArgs.push('-o', options.alias);
   }
   if (options.json) {
     sfArgs.push('--json');
   }
-
+ 
   return execPromise('sf', sfArgs, options.useShell ?? useGitBash);
 };
-
+ 
 export interface SfQueryResult<T = any> {
   parsed: T;
   stdout: string;
   stderr: string;
 }
 
-export const sfQuery = async <T = any>(alias: string, query: string, tooling: boolean = false, extraArgs: string[] = []): Promise<SfQueryResult<T>> => {
-  const args = ['data', 'query', ...(tooling ? ['-t'] : []), '-q', query, ...extraArgs];
-  const result = await runSf(args, { alias, json: true });
-  try {
-    const parsed = JSON.parse(result.stdout) as T;
-    return { parsed, stdout: result.stdout, stderr: result.stderr };
-  } catch (error: any) {
-    const parseError = new Error(`sfQuery JSON parse error: ${error.message}`);
-    (parseError as any).stdout = result.stdout;
-    (parseError as any).stderr = result.stderr;
-    throw parseError;
+export const loadConfig = (configPath: string): any => {
+  if (!fs.existsSync(configPath)) {
+    console.error(`エラー: config.json が見つかりません。パス: ${configPath}`);
+    process.exit(1);
   }
-};
-
-export const saveQueryJsonFile = async (outputDir: string, fileName: string, alias: string, query: string, tooling: boolean = false) => {
-  const queryRes = await sfQuery(alias, query, tooling);
-  const parsed = queryRes.parsed;
-  const outputPath = path.join(outputDir, fileName);
-  fs.writeFileSync(outputPath, JSON.stringify(parsed, null, 2));
-  return parsed;
-};
-
-export const saveSobjectListFile = async (outputDir: string, alias: string, fileName: string = 'sobject-list.json') => {
-  console.log('sObject一覧を取得中...');
-  const result = await runSf(['sobject', 'list', '--sobject', 'all'], { alias, json: true });
-  const parsed = JSON.parse(result.stdout);
-  const outputPath = path.join(outputDir, fileName);
-  fs.writeFileSync(outputPath, JSON.stringify(parsed, null, 2));
-  console.log(`sObject一覧を取得し、output/${fileName} に保存しました。`);
-  return parsed;
-};
-
-export const checkSfInstalled = async (): Promise<void> => {
   try {
-    await runSf(['--version']);
-  } catch (error) {
-    console.error('エラー: sf コマンドが見つかりません。Salesforce CLIをインストールしてください。');
+    return JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  } catch (e) {
+    console.error('エラー: config.json のフォーマットが不正です。');
     process.exit(1);
   }
 };
+
+export class SfClient {
+  private alias: string;
+  private outputDir: string;
+
+  constructor(alias: string, outputDir: string) {
+    this.alias = alias;
+    this.outputDir = outputDir;
+  }
+
+  async sfQuery<T = any>(query: string, tooling: boolean = false, extraArgs: string[] = []): Promise<SfQueryResult<T>> {
+    const args = ['data', 'query', ...(tooling ? ['-t'] : []), '-q', query, ...extraArgs];
+    const result = await runSf(args, { alias: this.alias, json: true });
+    try {
+      const parsed = JSON.parse(result.stdout) as T;
+      return { parsed, stdout: result.stdout, stderr: result.stderr };
+    } catch (error: any) {
+      const parseError = new Error(`sfQuery JSON parse error: ${error.message}`);
+      (parseError as any).stdout = result.stdout;
+      (parseError as any).stderr = result.stderr;
+      throw parseError;
+    }
+  }
+
+  async saveQueryJsonFile(fileName: string, query: string, tooling: boolean = false) {
+    const queryRes = await this.sfQuery(query, tooling);
+    const parsed = queryRes.parsed;
+    const outputPath = path.join(this.outputDir, fileName);
+    fs.writeFileSync(outputPath, JSON.stringify(parsed, null, 2));
+    return parsed;
+  }
+
+  async saveSobjectListFile(fileName: string = 'sobject-list.json') {
+    console.log('sObject一覧を取得中...');
+    const result = await runSf(['sobject', 'list', '--sobject', 'all'], { alias: this.alias, json: true });
+    const parsed = JSON.parse(result.stdout);
+    const outputPath = path.join(this.outputDir, fileName);
+    fs.writeFileSync(outputPath, JSON.stringify(parsed, null, 2));
+    console.log(`sObject一覧を取得し、output/${fileName} に保存しました。`);
+    return parsed;
+  }
+
+  static async checkSfInstalled(): Promise<void> {
+    try {
+      await runSf(['--version']);
+    } catch (error) {
+      console.error('エラー: sf コマンドが見つかりません。Salesforce CLIをインストールしてください。');
+      process.exit(1);
+    }
+  }
+}
