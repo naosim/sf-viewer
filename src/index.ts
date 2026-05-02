@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
-import { SfClient, loadConfig } from "./execPromise";
+import { SfClient, loadConfig, IFileSaver } from "./execPromise";
 import { RetrieveSalesforce } from "./retrieveSalesforce";
 
 async function main() {
@@ -38,6 +38,7 @@ async function main() {
     sfClient,
     config,
     outputDir,
+    sfClient as IFileSaver,
   );
   retrieveSalesforce.run(onlyFlows);
 }
