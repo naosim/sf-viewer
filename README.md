@@ -226,7 +226,7 @@ npm test
 
 ## QA
 
-## aliasを指定してもうまくいかない
+### aliasを指定してもうまくいかない
 `ts-node src/index.ts dev_hoge`のようにaliasを正しく指定しても、env.jsonに記載がないと動作しません。
 env.jsonを編集してください。
 
