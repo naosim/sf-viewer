@@ -65,6 +65,43 @@ function run() {
     }
   }
 
+  console.log('\n--- Processing: meta.json ---');
+
+  // meta.jsonを取得して書き込む
+  const metaFiles = folder.getFilesByName('meta.json');
+  if (metaFiles.hasNext()) {
+    const metaFile = metaFiles.next();
+    const metaContent = metaFile.getBlob().getDataAsString();
+    const meta = JSON.parse(metaContent);
+
+    console.log(` Meta: alias=${meta.alias}, retrievedAt=${meta.retrievedAt}`);
+
+    // シートの作成またはクリア
+    let metaSheet = ss.getSheetByName('meta');
+    if (metaSheet) {
+      metaSheet.clear();
+    } else {
+      metaSheet = ss.insertSheet('meta');
+    }
+
+    // データを2次元配列に変換
+    const metaRows = [
+      ['alias', meta.alias || ''],
+      ['retrievedAt', meta.retrievedAt || '']
+    ];
+
+    if (meta.queryJobs) {
+      for (const job of meta.queryJobs) {
+        metaRows.push(['queryJob', JSON.stringify(job)]);
+      }
+    }
+
+    metaSheet.getRange(1, 1, metaRows.length, 2).setValues(metaRows);
+    console.log(` Wrote meta info: ${metaRows.length} rows`);
+  } else {
+    console.log(` meta.json not found`);
+  }
+
   console.log('\n=== 完了 ===');
 }
 
