@@ -2,7 +2,14 @@
 
 ## 概要
 
-sf-viewerは、Salesforce CLI (`sf`) を通じてSalesforce組織からデータを取得し、JSON形式で保存する実行ユーティリティです。
+sf-viewerは、Salesforce組織の構成情報を取得して基本設計書を可視化するツールです。
+
+### ユースケース
+
+- Salesforceの設定内容をTSV/Markdownとして出力
+- オブジェクト項目、フロー、Apexクラス等の情報を一覧表示
+- スタンダアロンHTMLやGoogle SpreadSheetでチーム共有
+- アドオンで独自出力やHTMLカスタマイズ
 
 ## 処理ステップ
 処理は大きく分けて2ステップあります。

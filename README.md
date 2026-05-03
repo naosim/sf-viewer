@@ -1,12 +1,19 @@
 # sf-viewer
 
-sf-viewer は Salesforce CLI を使って Salesforce 組織からメタデータやフロー関連データを取得し、JSON ファイルとして保存するユーティリティです。
+Salesforce組織の構成情報を取得し、基本設計書として可視化するツールです。
+
+## ユースケース
+
+- **設計書の自動生成**: Salesforceの設定内容をTSV/Markdownとして出力
+- **構成把握**: オブジェクト項目、フロー、Apexクラス等の情報を一覧表示
+- **チーム共有**: スタンダアロンHTMLやGoogle SpreadSheetで情報を共有
+- **アドオンによる拡張**: 独自のTSV出力やHTMLカスタマイズが可能
 
 ## 概要
 
 - Salesforce CLI (`npx sf`) を呼び出して Salesforce 組織からデータを取得
-　　- Windows では Git Bash がある場合、`bash.exe -lc` 経由で `npx sf` を実行
-- 取得対象はオブジェクト一覧、項目一覧、sObject一覧など（config.jsonでカスタマイズ可能）
+- Windows では Git Bash がある場合、`bash.exe -lc` 経由で `npx sf` を実行
+- 取得対象: オブジェクト一覧、項目一覧、フロー定義、定期実行ジョブなど（config.jsonでカスタマイズ可能）
 - 出力形式: TSV, スタンダアロンHTML, Google SpreadSheet (GAS)
 
 ## 事前準備
@@ -111,7 +118,7 @@ npx ts-node src/index.ts dev1
 - `out_designDoc/meta.json` - メタデータ（alias, retrievedAt, queryJobs）
 - `out_designDoc/flowDefinitions.tsv` - FlowDefinition 一覧
 - `out_designDoc/flows.tsv` - フロー一覧
-- `out_designDoc/cronJobs.tsv` - CronTrigger 一詳
+- `out_designDoc/cronJobs.tsv` - CronTrigger 一覧
 
 ## 個別実行
 
@@ -124,7 +131,7 @@ npx ts-node src/index.ts dev1
 
 ### HTMLテンプレート
 
-HTML模板は `src/html/viewer.html` に配置されています。プレースホルダー:
+HTMLテンプレートは `src/html/viewer.html` に配置されています。プレースホルダー:
 
 - `{{PAGE_TITLE}}` - ページタイトル
 - `{{VIEWER_CSS}}` - viewer.css の内容
