@@ -46,15 +46,19 @@ sf-viewer は Salesforce CLI を使って Salesforce 組織からメタデータ
 `objectBlackList`: 項目一覧取得時に除外するオブジェクト名の配列
 `queryJobs`: 取得するデータのカスタマイズ（追加・削除・クエリ修正が可能）
 
-## インストール
+## Getting Started
+
+### 1. インストール
 
 ```bash
 npm install
 ```
 
-## 実行方法
+### 2. 設定
 
-すべての処理（データ取得 + 基本設計書生成）を実行する:
+`env.json` と `config.json` を編集します（詳細は「事前準備」を参照）。
+
+### 3. データ取得と基本設計書生成
 
 ```bash
 # デフォルトのaliasを使用する場合
@@ -64,10 +68,14 @@ npx ts-node src/index.ts
 npx ts-node src/index.ts dev1
 ```
 
-個別に実行する場合:
+### 4. HTML Viewer で表示
 
-- データ取得のみ: `SF_ALIAS=dev npx ts-node src/retrieveData.ts`
-- 基本設計書生成のみ: `SF_ALIAS=dev npx ts-node src/generateDesignDoc.ts`
+1. ローカルサーバーを起動:
+   ```bash
+   npx http-server . -p 8080
+   ```
+
+2. ブラウザーで `http://localhost:8080/html/index.html` にアクセス
 
 ## 出力ファイル
 
@@ -88,7 +96,12 @@ npx ts-node src/index.ts dev1
 - `out_designDoc/meta.json` - メタデータ（alias, retrievedAt, queryJobs）
 - `out_designDoc/flowDefinitions.tsv` - FlowDefinition 一覧
 - `out_designDoc/flows.tsv` - フロー一覧
-- `out_designDoc/cronJobs.tsv` - CronTrigger 一覧
+- `out_designDoc/cronJobs.tsv` - CronTrigger 一詳
+
+## 個別実行
+
+- データ取得のみ: `SF_ALIAS=dev npx ts-node src/retrieveData.ts`
+- 基本設計書生成のみ: `SF_ALIAS=dev npx ts-node src/generateDesignDoc.ts`
 
 ## テストの実行方法
 
@@ -97,26 +110,6 @@ npm test
 ```
 
 テストは `test/` ディレクトリに配置されています。
-
-## HTML Viewer のビルド
-
-HTML Viewer は `src/FrontMatterTSV.ts` をコンパイルした JavaScript を使用します。
-
-```bash
-# src/FrontMatterTSV.ts を html/js/FrontMatterTSV.js にコンパイル
-npx tsc src/FrontMatterTSV.ts --outDir html/js --module ES2022 --target ES2022 --esModuleInterop --skipLibCheck --ignoreConfig
-```
-
-または、手動で `html/js/FrontMatterTSV.js` を更新してください（現在、重複コードが存在します）。
-
-## HTML Viewer の実行
-
-```bash
-# プロジェクトのルートディレクトリでローカルサーバーを起動
-npx http-server . -p 8080
-```
-
-然后、ブラウザーで `http://localhost:8080/html/index.html` にアクセス
 
 ## 補足
 
