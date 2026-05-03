@@ -48,22 +48,20 @@ sf-viewerは、Salesforce CLI (`sf`) を通じてSalesforce組織からデータ
 - 出力先: `out_designDoc/` ディレクトリ
 - 出力ファイル:
   - `out_designDoc/fields.tsv` - 項目一覧（ObjectName, FieldName, Label, DataType, Length）
-  - `out_designDoc/meta.json` - メタデータ（alias, retrievedAt）
+  - `out_designDoc/meta.json` - メタデータ（alias, retrievedAt, queryJobs）
+  - `out_designDoc/{queryJob fileName}.tsv` - queryJobsで指定したJSONファイルのTSV版
+- 各TSVファイルには label メタデータが含まれる（fields.tsvは「オブジェクト定義」、他はqueryJobのlabel）
 - 出力前に前回出力を `out_designDoc/backup/{timestamp}_{alias}/` にバックアップ
-
-## 開発工程
-まずは処理1の完成を目指します。処理1が安定したら、処理2の設計と生成ロジックを追加します。
 
 ## 実行
 
-### 処理1: データ取得
+### 一括実行（処理1 + 処理2）
 ```
-npx ts-node src/retrieveData.ts
+npx ts-node src/index.ts
 ```
 
-### 処理2: 基本設計書生成
-```
-npx ts-node src/generateDesignDoc.ts
-```
+### 個別実行
+- 処理1のみ: `npx ts-node src/retrieveData.ts`
+- 処理2のみ: `npx ts-node src/generateDesignDoc.ts`
 
 

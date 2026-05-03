@@ -42,17 +42,16 @@ npm install
 
 ## 実行方法
 
-すべてのデータ取得を実行する:
+すべての処理（データ取得 + 基本設計書生成）を実行する:
 
 ```bash
-npx ts-node src/retrieveData.ts
+npx ts-node src/index.ts
 ```
 
-基本設計書を生成する（TSV形式）:
+個別に実行する場合:
 
-```bash
-npx ts-node src/generateDesignDoc.ts
-```
+- データ取得のみ: `npx ts-node src/retrieveData.ts`
+- 基本設計書生成のみ: `npx ts-node src/generateDesignDoc.ts`
 
 ## 出力ファイル
 
@@ -70,7 +69,10 @@ npx ts-node src/generateDesignDoc.ts
 基本設計書は `out_designDoc/` ディレクトリに保存されます。
 
 - `out_designDoc/fields.tsv` - 項目一覧
-- `out_designDoc/meta.json` - メタデータ（alias, retrievedAt）
+- `out_designDoc/meta.json` - メタデータ（alias, retrievedAt, queryJobs）
+- `out_designDoc/flowDefinitions.tsv` - FlowDefinition 一覧
+- `out_designDoc/flows.tsv` - フロー一覧
+- `out_designDoc/cronJobs.tsv` - CronTrigger 一覧
 
 ## テストの実行方法
 
