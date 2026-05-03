@@ -45,7 +45,7 @@ npm install
 すべてのデータ取得を実行する:
 
 ```bash
-npx ts-node src/index.ts
+npx ts-node src/retrieveData.ts
 ```
 
 基本設計書を生成する（TSV形式）:

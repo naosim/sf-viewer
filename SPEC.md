@@ -58,7 +58,7 @@ sf-viewerは、Salesforce CLI (`sf`) を通じてSalesforce組織からデータ
 
 ### 処理1: データ取得
 ```
-npx ts-node src/index.ts
+npx ts-node src/retrieveData.ts
 ```
 
 ### 処理2: 基本設計書生成
