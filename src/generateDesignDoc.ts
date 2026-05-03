@@ -1,5 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
+import * as ts from "typescript";
 import { FrontMatterTSV } from "./FrontMatterTSV";
 import { formatTimestamp } from "./sfUtil";
 import { generateStandaloneHtml } from "./generateStandaloneHtml";
@@ -100,9 +101,10 @@ function main() {
   const inputMeta = JSON.parse(fs.readFileSync(inputMetaPath, "utf8"));
 
   const retrievedAt = new Date();
-  const meta: { alias: string; retrievedAt: string; queryJobs?: typeof inputMeta.queryJobs; tabs?: string[] } = {
+  const meta: { alias: string; retrievedAt: string; title?: string; queryJobs?: typeof inputMeta.queryJobs; tabs?: string[] } = {
     alias: inputMeta.alias,
     retrievedAt: retrievedAt.toLocaleString(),
+    title: inputMeta.title || "SF Viewer - 基本設計書",
   };
   if (inputMeta.queryJobs) {
     meta.queryJobs = inputMeta.queryJobs;
@@ -151,12 +153,90 @@ function main() {
   const tabs = fs.readdirSync(outputDir)
     .filter((f) => f.endsWith(".tsv") || f.endsWith(".md"))
     .sort();
-  meta.tabs = tabs;
+  
+  const result = runDesignDocAddons(inputDir, outputDir, meta, tabs);
+  
+  meta.tabs = result.tabs;
+  if (result.title) {
+    meta.title = result.title;
+  }
   fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2));
 
   console.log("--- 処理2: 完了 ---");
 
   generateStandaloneHtml(outputDir, inputMeta);
+}
+
+interface DesignDocResult {
+  tabs?: string[];
+  title?: string;
+}
+
+function runDesignDocAddons(inputDir: string, outputDir: string, meta: any, tabs: string[]): DesignDocResult {
+  const addonsDir = path.join(__dirname, "../addons");
+  if (!fs.existsSync(addonsDir)) {
+    console.log("addons/ ディレクトリが存在しないため、スキップします。");
+    return { tabs };
+  }
+
+  const designDocFiles = fs.readdirSync(addonsDir).filter((f) => f.startsWith("designDoc") && f.endsWith(".ts"));
+  if (designDocFiles.length === 0) {
+    console.log("designDocアドオンが存在しないため、スキップします。");
+    return { tabs };
+  }
+
+  const inputData: { [filename: string]: any } = {};
+  const jsonFiles = fs.readdirSync(inputDir).filter((f) => f.endsWith(".json"));
+  for (const jsonFile of jsonFiles) {
+    const jsonPath = path.join(inputDir, jsonFile);
+    inputData[jsonFile.replace(".json", "")] = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
+  }
+
+  let currentTabs = tabs;
+  let currentTitle = meta.title || "SF Viewer - 基本設計書";
+
+  for (const addonFile of designDocFiles) {
+    try {
+      const addonName = addonFile.replace(".ts", "");
+      console.log(`designDocアドオンを実行中: ${addonName}`);
+
+      const addonPath = path.join(addonsDir, addonFile);
+      const addonCode = fs.readFileSync(addonPath, "utf8");
+
+      const transpiled = ts.transpileModule(addonCode, {
+        compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
+      });
+
+      const module: { exports: { run?: (inputData: any, tabs: string[], meta: any) => DesignDocResult } } = { exports: {} };
+      const evalCode = new Function("module", "exports", transpiled.outputText);
+      evalCode(module, module.exports);
+      const runFunction = module.exports.run;
+
+      if (typeof runFunction !== "function") {
+        throw new Error("run 関数がエクスポートされていません。");
+      }
+
+      const result: DesignDocResult = runFunction(inputData, currentTabs, meta);
+
+      if (result.tabs && Array.isArray(result.tabs)) {
+        const existingTabs = new Set(currentTabs);
+        const mentionedTabs = result.tabs.filter(t => existingTabs.has(t));
+        const remainingTabs = currentTabs.filter(t => !mentionedTabs.includes(t));
+        currentTabs = [...mentionedTabs, ...remainingTabs];
+        console.log(`${addonName}: タブ顺番を更新しました`);
+      }
+
+      if (result.title && typeof result.title === "string") {
+        currentTitle = result.title;
+        console.log(`${addonName}: タイトルを「${currentTitle}」に変更しました`);
+      }
+    } catch (error: any) {
+      console.error(`designDocアドオン ${addonFile} の実行中にエラーが発生しました: ${error.message}`);
+      throw error;
+    }
+  }
+
+  return { tabs: currentTabs, title: currentTitle };
 }
 
 main();

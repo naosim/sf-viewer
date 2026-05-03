@@ -18,7 +18,7 @@ export function runAddons(inputDir: string, outputDir: string, meta: any): void 
     return;
   }
 
-  const addonFiles = fs.readdirSync(addonsDir).filter((f) => f.endsWith(".ts"));
+  const addonFiles = fs.readdirSync(addonsDir).filter((f) => f.endsWith(".ts") && !f.startsWith("designDoc"));
   if (addonFiles.length === 0) {
     console.log("アドオンファイルが存在しないため、スキップします。");
     return;

@@ -68,6 +68,7 @@ const tsvDataJson = JSON.stringify(tsvDataList);
   const outputMetaPath = path.join(outputDir, "meta.json");
   const outputMeta = JSON.parse(fs.readFileSync(outputMetaPath, "utf8"));
   const tabsJson = JSON.stringify(outputMeta.tabs || []);
+  const pageTitle = outputMeta.title || "SF Viewer - 基本設計書";
 
   const viewerJs = fs.readFileSync(path.join(__dirname, "html/js/viewer.js"), "utf8");
 
@@ -76,7 +77,7 @@ const tsvDataJson = JSON.stringify(tsvDataList);
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SF Viewer - 基本設計書</title>
+  <title>${pageTitle}</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/tabulator/5.5.0/css/tabulator.min.css" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -105,7 +106,7 @@ const tsvDataJson = JSON.stringify(tsvDataList);
 </head>
 <body>
   <header>
-    <h1>SF Viewer - 基本設計書</h1>
+    <h1>${pageTitle}</h1>
     <div class="meta">
       <span id="alias"></span> | 
       <span id="retrievedAt"></span>
