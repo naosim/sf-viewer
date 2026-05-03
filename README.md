@@ -1,6 +1,6 @@
 # sf-viewer
 
-`s`f-viewer は Salesforce CLI を使って Salesforce 組織からメタデータやフロー関連データを取得し、JSON ファイルとして保存するユーティリティです。
+sf-viewer は Salesforce CLI を使って Salesforce 組織からメタデータやフロー関連データを取得し、JSON ファイルとして保存するユーティリティです。
 
 ## 概要
 
