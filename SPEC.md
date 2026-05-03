@@ -100,10 +100,6 @@ npx ts-node src/index.ts dev1
 
 ## 追加機能
 
-### HTML Viewer で表示
-- ローカルサーバーを使って `html/index.html` で表示
-- `npx http-server . -p 8080` で起動
-
 ### Google SpreadSheet への反映
 - GAS（Google Apps Script）を使用して `out_designDoc/` を Google SpreadSheet に反映
 - GAS のソースは `gas/index.gs` と `gas/config.gs` に保存

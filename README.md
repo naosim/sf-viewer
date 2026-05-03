@@ -7,7 +7,7 @@ sf-viewer は Salesforce CLI を使って Salesforce 組織からメタデータ
 - Salesforce CLI (`npx sf`) を呼び出して Salesforce 組織からデータを取得
 　　- Windows では Git Bash がある場合、`bash.exe -lc` 経由で `npx sf` を実行
 - 取得対象はオブジェクト一覧、項目一覧、sObject一覧など（config.jsonでカスタマイズ可能）
-- 出力形式: TSV, HTML, スタンダアロンHTML, Google SpreadSheet (GAS)
+- 出力形式: TSV, スタンダアロンHTML, Google SpreadSheet (GAS)
 
 ## 事前準備
 
@@ -82,15 +82,6 @@ npx ts-node src/index.ts dev1
 ---
 
 ## 追加機能
-
-### HTML Viewer で表示
-
-1. ローカルサーバーを起動:
-   ```bash
-   npx http-server . -p 8080
-   ```
-
-2. ブラウザーで `http://localhost:8080/html/index.html` にアクセス
 
 ### Google SpreadSheet へ反映
 
