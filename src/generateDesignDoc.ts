@@ -13,7 +13,7 @@ interface QueryJob {
 
 function convertJsonToTsv(
   jsonPath: string,
-  meta: { [key: string]: string },
+  meta: { [key: string]: string | string[] },
   label: string,
   tsvPath: string,
 ): void {
@@ -100,7 +100,7 @@ function main() {
   const inputMeta = JSON.parse(fs.readFileSync(inputMetaPath, "utf8"));
 
   const retrievedAt = new Date();
-  const meta: { alias: string; retrievedAt: string; queryJobs?: typeof inputMeta.queryJobs } = {
+  const meta: { alias: string; retrievedAt: string; queryJobs?: typeof inputMeta.queryJobs; tabs?: string[] } = {
     alias: inputMeta.alias,
     retrievedAt: retrievedAt.toLocaleString(),
   };
@@ -124,7 +124,8 @@ function main() {
         ]);
       }
     }
-    const metaWithLabel = { ...meta, label: "オブジェクト定義" };
+    const { tabs, ...metaWithoutTabs } = meta;
+    const metaWithLabel: { [key: string]: string } = { ...metaWithoutTabs, label: "オブジェクト定義" };
     const tsv = FrontMatterTSV.stringify(
       metaWithLabel,
       ["ObjectName", "FieldName", "Label", "DataType", "Length"],
@@ -146,6 +147,12 @@ function main() {
 
   console.log("\n--- アドオンを実行します ---");
   runAddons(inputDir, outputDir, meta);
+
+  const tabs = fs.readdirSync(outputDir)
+    .filter((f) => f.endsWith(".tsv") || f.endsWith(".md"))
+    .sort();
+  meta.tabs = tabs;
+  fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2));
 
   console.log("--- 処理2: 完了 ---");
 

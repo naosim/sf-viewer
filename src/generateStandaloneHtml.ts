@@ -65,6 +65,10 @@ const tsvDataJson = JSON.stringify(tsvDataList);
   const mdDataJson = JSON.stringify(mdDataList);
   const metaJson = JSON.stringify(meta);
 
+  const outputMetaPath = path.join(outputDir, "meta.json");
+  const outputMeta = JSON.parse(fs.readFileSync(outputMetaPath, "utf8"));
+  const tabsJson = JSON.stringify(outputMeta.tabs || []);
+
   const viewerJs = fs.readFileSync(path.join(__dirname, "html/js/viewer.js"), "utf8");
 
   const html = `<!DOCTYPE html>
@@ -124,8 +128,9 @@ const tsvDataJson = JSON.stringify(tsvDataList);
     const tsvDataList = ${tsvDataJson};
     const mdDataList = ${mdDataJson};
     const meta = ${metaJson};
+    const tabs = ${tabsJson};
     ${viewerJs}
-    initViewer(tsvDataList, mdDataList, meta);
+    initViewer(tsvDataList, mdDataList, meta, tabs);
   </script>
 </body>
 </html>`;
