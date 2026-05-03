@@ -6,14 +6,14 @@ import { RetrieveSalesforce } from "./retrieveSalesforce";
 async function main() {
   console.log("--- 処理1: Salesforceからのデータ取得を開始します ---");
 
-  // 2. config.jsonの読み込み
+  const alias = process.env.SF_ALIAS;
+  if (!alias) {
+    throw new Error("エラー: SF_ALIAS 環境変数が設定されていません。");
+  }
+
+  // config.jsonの読み込み（alias以外）
   const configPath = path.join(__dirname, "../config.json");
   const config = loadConfig(configPath);
-
-  const alias = config.alias;
-  if (!alias) {
-    throw new Error("エラー: config.json に alias が設定されていません。");
-  }
 
   console.log(`対象エイリアス: ${alias}`);
 

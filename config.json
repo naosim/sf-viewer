@@ -1,5 +1,4 @@
 {
-  "alias": "dev",
   "objectBlackList": [
     "AccountCleanInfo",
     "ActivationTarget",
