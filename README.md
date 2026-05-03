@@ -12,13 +12,25 @@
 
 1. Node.js と npm がインストールされていること
 2. Salesforce CLI プラグインが利用可能であること
-3. `config.json` に対象組織の alias を設定すること
+3. `env.json` に対象組織の alias を設定すること
+4. `config.json` に objectBlackList と queryJobs を設定すること
+
+例:`env.json`
+
+```json
+[
+  { "alias": "dev", "isDefault": true },
+  { "alias": "dev1" }
+]
+```
+
+- `alias`: Salesforce組織のエイリアス名
+- `isDefault`: デフォルトで使用するエイリアス（trueのものを1つだけ設定）
 
 例:`config.json`
 
 ```json
 {
-  "alias": "dev",
   "objectBlackList": ["Account", "Contact"],
   "queryJobs": [
     {
@@ -45,13 +57,17 @@ npm install
 すべての処理（データ取得 + 基本設計書生成）を実行する:
 
 ```bash
+# デフォルトのaliasを使用する場合
 npx ts-node src/index.ts
+
+# 明示的にaliasを指定する場合
+npx ts-node src/index.ts dev1
 ```
 
 個別に実行する場合:
 
-- データ取得のみ: `npx ts-node src/retrieveData.ts`
-- 基本設計書生成のみ: `npx ts-node src/generateDesignDoc.ts`
+- データ取得のみ: `SF_ALIAS=dev npx ts-node src/retrieveData.ts`
+- 基本設計書生成のみ: `SF_ALIAS=dev npx ts-node src/generateDesignDoc.ts`
 
 ## 出力ファイル
 

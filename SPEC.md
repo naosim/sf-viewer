@@ -15,11 +15,22 @@ sf-viewerは、Salesforce CLI (`sf`) を通じてSalesforce組織からデータ
 - Salesforce操作: `npx sf` を経由した Salesforce CLI
 
 ### 要件
+#### 事前準備
+- `env.json` に alias 一覧を定義:
+  ```json
+  [
+    { "alias": "dev", "isDefault": true },
+    { "alias": "dev1" }
+  ]
+  ```
+  - `alias`: Salesforce組織のエイリアス名
+  - `isDefault`: デフォルトで使用するエイリアス（1つだけtrueに設定）
+
 #### 処理1
 - データ取得は `npx sf` で実行する
 - Windows環境では Git Bash が利用可能なら `bash.exe -lc` 経由でコマンドを実行する
 - `sf` コマンドの存在確認を行い、未インストールの場合は利用者にエラーメッセージを表示する
-- `config.json` に `alias` を記載し、対象Orgを指定する
+- alias は `env.json` から取得し、CLI引数またはisDefaultで指定
 - 取得対象データ
   - オブジェクト一覧: `EntityDefinition` (SOQL)
   - 項目一覧: `FieldDefinition` (SOQL)
@@ -57,11 +68,15 @@ sf-viewerは、Salesforce CLI (`sf`) を通じてSalesforce組織からデータ
 
 ### 一括実行（処理1 + 処理2）
 ```
+# デフォルトaliasを使用
 npx ts-node src/index.ts
+
+# 明示的にaliasを指定
+npx ts-node src/index.ts dev1
 ```
 
 ### 個別実行
-- 処理1のみ: `npx ts-node src/retrieveData.ts`
-- 処理2のみ: `npx ts-node src/generateDesignDoc.ts`
+- 処理1のみ: `SF_ALIAS=dev npx ts-node src/retrieveData.ts`
+- 処理2のみ: `SF_ALIAS=dev npx ts-node src/generateDesignDoc.ts`
 
 
