@@ -122,25 +122,85 @@ npx ts-node src/index.ts dev1
 
 基本設計書生成時に `standaloneHtml/viewer.html` に全データを埋め込んだ単独のHTMLファイルを生成します。外部依存なし（CDNは使用）で、単独で開いて表示可能です。
 
+### HTMLテンプレート
+
+HTML模板は `src/html/viewer.html` に配置されています。プレースホルダー:
+
+- `{{PAGE_TITLE}}` - ページタイトル
+- `{{VIEWER_CSS}}` - viewer.css の内容
+- `{{VIEWER_JS}}` - viewer.js の内容
+- `{{TSV_DATA}}` - TSVデータ（JSON）
+- `{{MD_DATA}}` - Markdownデータ（JSON）
+- `{{META}}` - メタデータ（JSON）
+- `{{TABS}}` - タブ一覧（JSON）
+- `{{CUSTOM_CSS}}` - htmlCustomアドオンのCSS
+- `{{CUSTOM_JS}}` - htmlCustomアドオンのJS
+
+### ソースファイル
+
+```
+src/html/
+├── viewer.html   ← HTMLテンプレート
+├── css/
+│   └── viewer.css
+└── js/
+    └── viewer.js
+```
+
 ## アドオン
 
 `addons/` ディレクトリに TypeScript ファイルを配置すると、基本設計書生成時に自動的に実行されます。
 
+### アドオンの種類
+
+| プレフィックス | インターフェース | 実行タイミング | 用途 |
+|--------------|----------------|--------------|------|
+| `sample*.ts` | `run(inputData): AddonResult[]` | TSV生成後 | カスタムTSV/MD生成 |
+| `designDoc*.ts` | `run(inputData, tabs, meta): {tabs?, title?}` | meta.json更新前 | タブ順、タイトル設定 |
+| `htmlCustom*.ts` | `run(meta): {css?, js?}` | HTML生成時 | CSS/JSカスタマイズ |
+
 ### インターフェース
 
+#### 標準アドオン (sample*.ts)
 ```typescript
 type JsonData = { [filename: string]: any };
 
-export function run(inputData: JsonData): { meta: { [key: string]: string }; headers: string[]; rows: string[][] }[] {
-  // output配下のJSONを読んで独自のTSVデータを返す
+export function run(inputData: JsonData): AddonResult[] {
   // 戻り値は配列で、複数のファイルを生成可能
 }
 ```
 
-### 出力
+#### designDoc アドオン (designDoc*.ts)
+```typescript
+type JsonData = { [filename: string]: any };
 
-- ファイル名: `{アドオン名}_{インデックス}.tsv`（例: `myAddon_0.tsv`）
-- ディレクトリ: `out_designDoc/`
+export function run(
+  inputData: JsonData,
+  tabs: string[],
+  meta: any
+): {
+  tabs?: string[];  // タブの順序を変更
+  title?: string;   // ページタイトルを変更
+} {}
+```
+
+#### HTMLアドオン (htmlCustom*.ts)
+```typescript
+export function run(meta: any): {
+  css?: string;  // カスタムCSS（末尾の<style>タグとして追加）
+  js?: string;   // カスタムJS（末尾の<script>タグとして追加）
+} {}
+```
+
+### ファイル名規則
+
+- 標準: `{アドオン名}_{インデックス}.tsv`（例: `myAddon_0.tsv`）
+- designDoc: `meta.json` に保存
+- htmlCustom: HTMLに直接埋め込み
+
+### 出力先
+
+- 標準アドオン: `out_designDoc/`
 - エラー発生時は処理が中止されます
 
 ## テストの実行方法

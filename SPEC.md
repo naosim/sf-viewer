@@ -84,16 +84,58 @@ npx ts-node src/index.ts dev1
 - 出力先: `standaloneHtml/viewer.html`
 - 外部依存なし（CDNは使用）
 - 表示仕様はHTML Viewerと同じ（Tabulator使用、タブ切り替え）
+- HTMLテンプレート: `src/html/viewer.html`（プレースホルダー: `{{PAGE_TITLE}}`, `{{VIEWER_CSS}}`, `{{VIEWER_JS}}`, `{{TSV_DATA}}`, `{{MD_DATA}}`, `{{META}}`, `{{TABS}}`, `{{CUSTOM_CSS}}`, `{{CUSTOM_JS}}`）
+- CSS: `src/html/css/viewer.css`
+- JS: `src/html/js/viewer.js`
 
 ### アドオン
-- `addons/` ディレクトリ内のすべての `.ts` ファイルを自動検出・実行
-- インターフェース:
-  ```typescript
-  type JsonData = { [filename: string]: any };
-  export function run(inputData: JsonData): { meta: { [key: string]: string }; headers: string[]; rows: string[][] }[]
-  ```
-- 入力: `output/` 配下のJSONファイル（キーはファイル名、バリューはパース后的オブジェクト）
+- `addons/` ディレクトリ内の `.ts` ファイルを自動検出・実行
+- プレフィックスによって処理が異なる:
+
+| プレフィックス | インターフェース | 実行タイミング | 出力先 |
+|--------------|----------------|--------------|--------|
+| `sample*.ts` | `run(inputData): AddonResult[]` | TSV生成後 | `out_designDoc/{name}_{i}.tsv` |
+| `designDoc*.ts` | `run(inputData, tabs, meta): {tabs?, title?}` | meta.json更新前 | `meta.json` |
+| `htmlCustom*.ts` | `run(meta): {css?, js?}` | HTML生成時 | HTMLに直接埋め込み |
+
+#### 標準アドオン (sample*.ts)
+```typescript
+type JsonData = { [filename: string]: any };
+type AddonResult = {
+  meta: { [key: string]: string };
+  headers?: string[];
+  rows?: string[][];
+  type?: 'tsv' | 'markdown';
+  content?: string;
+};
+
+export function run(inputData: JsonData): AddonResult[]
+```
+- 入力: `output/` 配下のJSONファイル
 - 出力: `out_designDoc/{アドオン名}_{インデックス}.tsv`
+
+#### designDoc アドオン (designDoc*.ts)
+```typescript
+type JsonData = { [filename: string]: any };
+
+export function run(
+  inputData: JsonData,
+  tabs: string[],
+  meta: any
+): {
+  tabs?: string[];  // タブの順序を変更
+  title?: string;   // ページタイトルを変更
+} {}
+```
+
+#### HTMLアドオン (htmlCustom*.ts)
+```typescript
+export function run(meta: any): {
+  css?: string;  // カスタムCSS（末尾の<style>タグとして追加）
+  js?: string;   // カスタムJS（末尾の<script>タグとして追加）
+} {}
+```
+
 - エラー発生時は処理中止
 
 ---
