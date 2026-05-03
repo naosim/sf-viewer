@@ -61,7 +61,7 @@ export function generateStandaloneHtml(outputDir: string, meta: any) {
     });
   }
 
-const tsvDataJson = JSON.stringify(tsvDataList);
+  const tsvDataJson = JSON.stringify(tsvDataList);
   const mdDataJson = JSON.stringify(mdDataList);
   const metaJson = JSON.stringify(meta);
 
@@ -70,8 +70,14 @@ const tsvDataJson = JSON.stringify(tsvDataList);
   const tabsJson = JSON.stringify(outputMeta.tabs || []);
   const pageTitle = outputMeta.title || "SF Viewer - 基本設計書";
 
-  const viewerJs = fs.readFileSync(path.join(__dirname, "html/js/viewer.js"), "utf8");
-  const viewerCss = fs.readFileSync(path.join(__dirname, "html/css/viewer.css"), "utf8");
+  const viewerJs = fs.readFileSync(
+    path.join(__dirname, "html/js/viewer.js"),
+    "utf8",
+  );
+  const viewerCss = fs.readFileSync(
+    path.join(__dirname, "html/css/viewer.css"),
+    "utf8",
+  );
 
   const html = `<!DOCTYPE html>
 <html lang="ja">
@@ -81,22 +87,23 @@ const tsvDataJson = JSON.stringify(tsvDataList);
   <title>${pageTitle}</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/tabulator/5.5.0/css/tabulator.min.css" rel="stylesheet">
   <style>${viewerCss}</style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.8.1/github-markdown-light.css" integrity="sha512-CxC9MO8FBaaq8vl9yaXHjgWd7uXqx3pWMSBP3daioTTI0gpXijlypuMV67NoE1bPYMzj7ZSNNS0o+jFFdFodgA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body>
   <header>
     <h1>${pageTitle}</h1>
     <div class="meta">
-      <span id="alias"></span> | 
+      <span id="alias"></span> |
       <span id="retrievedAt"></span>
     </div>
   </header>
-  
+
   <div class="tabs" id="tabs"></div>
-  
+
   <div class="content">
     <div class="table-container">
       <div id="table"></div>
-      <div id="markdown"></div>
+      <div id="markdown" class="markdown-body"></div>
     </div>
   </div>
 
