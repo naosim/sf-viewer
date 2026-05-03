@@ -1,6 +1,5 @@
 import * as fs from "fs";
 import * as path from "path";
-import * as ts from "typescript";
 import { FrontMatterTSV } from "./FrontMatterTSV";
 import { formatTimestamp } from "./sfUtil";
 import { generateStandaloneHtml } from "./generateStandaloneHtml";
@@ -29,9 +28,10 @@ function convertJsonToTsv(
   const data = jsonData.data || jsonData;
   const records = data.result?.records || data.result || [];
 
-  const headers = records.length > 0
-    ? Object.keys(records[0]).filter((key) => key !== "attributes")
-    : [];
+  const headers =
+    records.length > 0
+      ? Object.keys(records[0]).filter((key) => key !== "attributes")
+      : [];
 
   const rows = records.map((record: any) =>
     headers.map((header) => {
@@ -53,7 +53,9 @@ function main() {
   const outputDir = path.join(__dirname, "../out_designDoc");
 
   if (!fs.existsSync(inputDir)) {
-    throw new Error("エラー: output ディレクトリが存在しません。処理1を先に実行してください。");
+    throw new Error(
+      "エラー: output ディレクトリが存在しません。処理1を先に実行してください。",
+    );
   }
 
   if (!fs.existsSync(outputDir)) {
@@ -101,7 +103,13 @@ function main() {
   const inputMeta = JSON.parse(fs.readFileSync(inputMetaPath, "utf8"));
 
   const retrievedAt = new Date();
-  const meta: { alias: string; retrievedAt: string; title?: string; queryJobs?: typeof inputMeta.queryJobs; tabs?: string[] } = {
+  const meta: {
+    alias: string;
+    retrievedAt: string;
+    title?: string;
+    queryJobs?: typeof inputMeta.queryJobs;
+    tabs?: string[];
+  } = {
     alias: inputMeta.alias,
     retrievedAt: retrievedAt.toLocaleString(),
     title: inputMeta.title || "SF Viewer - 基本設計書",
@@ -127,7 +135,10 @@ function main() {
       }
     }
     const { tabs, ...metaWithoutTabs } = meta;
-    const metaWithLabel: { [key: string]: string } = { ...metaWithoutTabs, label: "オブジェクト定義" };
+    const metaWithLabel: { [key: string]: string } = {
+      ...metaWithoutTabs,
+      label: "オブジェクト定義",
+    };
     const tsv = FrontMatterTSV.stringify(
       metaWithLabel,
       ["ObjectName", "FieldName", "Label", "DataType", "Length"],
@@ -144,18 +155,21 @@ function main() {
     const tsvFileName = job.fileName.replace(".json", ".tsv");
     const tsvPath = path.join(outputDir, tsvFileName);
     convertJsonToTsv(jsonPath, meta, job.label, tsvPath);
-    console.log(`${tsvFileName} を out_designDoc/${tsvFileName} に保存しました。`);
+    console.log(
+      `${tsvFileName} を out_designDoc/${tsvFileName} に保存しました。`,
+    );
   }
 
   console.log("\n--- アドオンを実行します ---");
   runAddons(inputDir, outputDir, meta);
 
-  const tabs = fs.readdirSync(outputDir)
+  const tabs = fs
+    .readdirSync(outputDir)
     .filter((f) => f.endsWith(".tsv") || f.endsWith(".md"))
     .sort();
-  
+
   const result = runDesignDocAddons(inputDir, meta, tabs);
-  
+
   meta.tabs = result.tabs;
   if (result.title) {
     meta.title = result.title;

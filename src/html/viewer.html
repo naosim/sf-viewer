@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{PAGE_TITLE}}</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/tabulator/5.5.0/css/tabulator.min.css" rel="stylesheet">
+  <style>{{VIEWER_CSS}}</style>
+  {{CUSTOM_CSS}}
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.8.1/github-markdown-light.css" integrity="sha512-CxC9MO8FBaaq8vl9yaXHjgWd7uXqx3pWMSBP3daioTTI0gpXijlypuMV67NoE1bPYMzj7ZSNNS0o+jFFdFodgA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+  <header>
+    <h1>{{PAGE_TITLE}}</h1>
+    <div class="meta">
+      <span id="alias"></span> |
+      <span id="retrievedAt"></span>
+    </div>
+  </header>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div class="content">
+    <div class="table-container">
+      <div id="table"></div>
+      <div id="markdown" class="markdown-body"></div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tabulator/5.5.0/js/tabulator.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <script>
+    const tsvDataList = {{TSV_DATA}};
+    const mdDataList = {{MD_DATA}};
+    const meta = {{META}};
+    const tabs = {{TABS}};
+    {{VIEWER_JS}}
+    initViewer(tsvDataList, mdDataList, meta, tabs);
+  </script>
+  {{CUSTOM_JS}}
+</body>
+</html>

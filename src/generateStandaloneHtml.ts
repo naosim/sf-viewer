@@ -1,6 +1,5 @@
 import * as fs from "fs";
 import * as path from "path";
-import * as ts from "typescript";
 import { FrontMatterTSV } from "./FrontMatterTSV";
 import { runHtmlAddons } from "./runAddons";
 
@@ -72,6 +71,10 @@ export function generateStandaloneHtml(outputDir: string, meta: any) {
   const tabsJson = JSON.stringify(outputMeta.tabs || []);
   const pageTitle = outputMeta.title || "SF Viewer - 基本設計書";
 
+  const viewerHtml = fs.readFileSync(
+    path.join(__dirname, "html/viewer.html"),
+    "utf8",
+  );
   const viewerJs = fs.readFileSync(
     path.join(__dirname, "html/js/viewer.js"),
     "utf8",
@@ -83,54 +86,22 @@ export function generateStandaloneHtml(outputDir: string, meta: any) {
 
   const htmlCustom = runHtmlAddons(meta);
 
-  const customCssTag = htmlCustom.css
-    ? `\n  <style>${htmlCustom.css}</style>`
-    : "";
-  const customJsTag = htmlCustom.js
-    ? `\n  <script>${htmlCustom.js}</script>`
-    : "";
-
-  const html = `<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${pageTitle}</title>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/tabulator/5.5.0/css/tabulator.min.css" rel="stylesheet">
-  <style>${viewerCss}</style>${customCssTag}
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.8.1/github-markdown-light.css" integrity="sha512-CxC9MO8FBaaq8vl9yaXHjgWd7uXqx3pWMSBP3daioTTI0gpXijlypuMV67NoE1bPYMzj7ZSNNS0o+jFFdFodgA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-</head>
-<body>
-  <header>
-    <h1>${pageTitle}</h1>
-    <div class="meta">
-      <span id="alias"></span> |
-      <span id="retrievedAt"></span>
-    </div>
-  </header>
-
-  <div class="tabs" id="tabs"></div>
-
-  <div class="content">
-    <div class="table-container">
-      <div id="table"></div>
-      <div id="markdown" class="markdown-body"></div>
-    </div>
-  </div>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/tabulator/5.5.0/js/tabulator.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
-  <script>
-    const tsvDataList = ${tsvDataJson};
-    const mdDataList = ${mdDataJson};
-    const meta = ${metaJson};
-    const tabs = ${tabsJson};
-    ${viewerJs}
-    initViewer(tsvDataList, mdDataList, meta, tabs);
-  </script>${customJsTag}
-</body>
-</html>`;
+  const html = viewerHtml
+    .replace(/\{\{PAGE_TITLE\}\}/g, pageTitle)
+    .replace(/\{\{VIEWER_CSS\}\}/g, viewerCss)
+    .replace(/\{\{VIEWER_JS\}\}/g, viewerJs)
+    .replace(/\{\{TSV_DATA\}\}/g, tsvDataJson)
+    .replace(/\{\{MD_DATA\}\}/g, mdDataJson)
+    .replace(/\{\{META\}\}/g, metaJson)
+    .replace(/\{\{TABS\}\}/g, tabsJson)
+    .replace(
+      /\{\{CUSTOM_CSS\}\}/g,
+      htmlCustom.css ? `\n  <style>${htmlCustom.css}</style>` : "",
+    )
+    .replace(
+      /\{\{CUSTOM_JS\}\}/g,
+      htmlCustom.js ? `\n  <script>${htmlCustom.js}</script>` : "",
+    );
 
   const outputPath = path.join(standaloneDir, "viewer.html");
   fs.writeFileSync(outputPath, html);
