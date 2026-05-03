@@ -12,9 +12,8 @@ sf-viewer は Salesforce CLI を使って Salesforce 組織からメタデータ
 ## 事前準備
 
 1. Node.js と npm がインストールされていること
-2. Salesforce CLI プラグインが利用可能であること
-3. `env.json` に対象組織の alias を設定すること
-4. `config.json` に objectBlackList と queryJobs を設定すること
+2. `env.json` に対象組織の alias を設定すること
+3. `config.json` に objectBlackList と queryJobs を設定すること
 
 例:`env.json`
 
@@ -55,11 +54,18 @@ sf-viewer は Salesforce CLI を使って Salesforce 組織からメタデータ
 npm install
 ```
 
-### 2. 設定
+### 2. Salesforce CLI ログイン
+
+```bash
+sf org login web -r [salesforceのURL] -a dev
+```
+alias(-a)の値も任意の値にできます。
+
+### 3. 設定
 
 `env.json` と `config.json` を編集します（詳細は「事前準備」を参照）。
 
-### 3. データ取得と基本設計書生成
+### 4. データ取得と基本設計書生成
 
 ```bash
 # デフォルトのaliasを使用する場合
@@ -69,7 +75,15 @@ npx ts-node src/index.ts
 npx ts-node src/index.ts dev1
 ```
 
-### 4. HTML Viewer で表示
+### 5. スタンダアロンHTMLを開く
+
+`standaloneHtml/viewer.html` をブラウザで開いて確認します。
+
+---
+
+## 追加機能
+
+### HTML Viewer で表示
 
 1. ローカルサーバーを起動:
    ```bash
@@ -78,14 +92,14 @@ npx ts-node src/index.ts dev1
 
 2. ブラウザーで `http://localhost:8080/html/index.html` にアクセス
 
-### 5. Google SpreadSheet へ反映
+### Google SpreadSheet へ反映
 
 1. `out_designDoc/` を Google Drive の指定フォルダにアップロード
 2. Google Apps Script のプロジェクトを開く（`gas/index.gs` と `gas/config.gs` を貼り付け）
 3. `gas/config.gs` の設定（DRIVE_FOLDER_ID, SPREADSHEET_ID）を編集
 4. `run()` 関数を実行（設定値が未編集の場合はエラーが表示されます）
 
-各TSVファイルはメタ情報（alias, retrievedAt, labelなど）をシートの1行目부터書き込み、ヘッダーとデータはメタ情報の後に続きます。
+各TSVファイルはメタ情報（alias, retrievedAt, labelなど）をシートの1行目から書き込み、ヘッダーとデータはメタ情報の後に続きます。
 
 ## 出力ファイル
 
@@ -111,12 +125,11 @@ npx ts-node src/index.ts dev1
 ## 個別実行
 
 - データ取得のみ: `SF_ALIAS=dev npx ts-node src/retrieveData.ts`
-- 基本設計書生成のみ: `npx ts-node src/generateDesignDoc.ts`
-- スタンダアロンHTML生成: `npx ts-node src/generateStandaloneHtml.ts`
+- 基本設計書生成のみ: `npx ts-node src/generateDesignDoc.ts`（TSVとスタンダアロンHTMLを両方生成）
 
 ## スタンダアロンHTML
 
-`standaloneHtml/viewer.html` に全データを埋め込んだ単独のHTMLファイルを生成します。外部依存なし（CDNは使用）で、単独で開いて表示可能です。
+基本設計書生成時に `standaloneHtml/viewer.html` に全データを埋め込んだ単独のHTMLファイルを生成します。外部依存なし（CDNは使用）で、単独で開いて表示可能です。
 
 ## テストの実行方法
 

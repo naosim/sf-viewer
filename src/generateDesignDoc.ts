@@ -2,6 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { FrontMatterTSV } from "./FrontMatterTSV";
 import { formatTimestamp } from "./sfUtil";
+import { generateStandaloneHtml } from "./generateStandaloneHtml";
 
 interface QueryJob {
   fileName: string;
@@ -143,6 +144,8 @@ function main() {
   }
 
   console.log("--- 処理2: 完了 ---");
+
+  generateStandaloneHtml(outputDir, inputMeta);
 }
 
 main();

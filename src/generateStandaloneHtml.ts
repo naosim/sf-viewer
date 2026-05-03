@@ -9,25 +9,19 @@ interface TsvData {
   rows: string[][];
 }
 
-function main() {
-  console.log("--- スタンダアロンHTMLを生成します ---");
+export function generateStandaloneHtml(outputDir: string, meta: any) {
+  console.log("\n--- スタンダアロンHTMLを生成します ---");
 
-  const inputDir = path.join(__dirname, "../out_designDoc");
-  const outputDir = path.join(__dirname, "../standaloneHtml");
-
-  if (!fs.existsSync(inputDir)) {
-    throw new Error("エラー: out_designDoc ディレクトリが存在しません。処理2を先に実行してください。");
+  const standaloneDir = path.join(__dirname, "../standaloneHtml");
+  if (!fs.existsSync(standaloneDir)) {
+    fs.mkdirSync(standaloneDir, { recursive: true });
   }
 
-  if (!fs.existsSync(outputDir)) {
-    fs.mkdirSync(outputDir, { recursive: true });
-  }
-
-  const files = fs.readdirSync(inputDir).filter((f) => f.endsWith(".tsv"));
+  const files = fs.readdirSync(outputDir).filter((f) => f.endsWith(".tsv"));
   const tsvDataList: TsvData[] = [];
 
   for (const file of files) {
-    const filePath = path.join(inputDir, file);
+    const filePath = path.join(outputDir, file);
     const content = fs.readFileSync(filePath, "utf8");
     const parsed = FrontMatterTSV.parse(content);
 
@@ -39,24 +33,10 @@ function main() {
     });
   }
 
-  const metaPath = path.join(inputDir, "meta.json");
-  const metaContent = fs.existsSync(metaPath)
-    ? JSON.parse(fs.readFileSync(metaPath, "utf8"))
-    : {};
-
-  const html = generateHtml(tsvDataList, metaContent);
-  const outputPath = path.join(outputDir, "viewer.html");
-  fs.writeFileSync(outputPath, html);
-
-  console.log(`standaloneHtml/viewer.html に保存しました。`);
-  console.log("--- 完了 ---");
-}
-
-function generateHtml(tsvDataList: TsvData[], meta: any): string {
   const tsvDataJson = JSON.stringify(tsvDataList);
   const metaJson = JSON.stringify(meta);
 
-  return `<!DOCTYPE html>
+  const html = `<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
@@ -105,13 +85,6 @@ function generateHtml(tsvDataList: TsvData[], meta: any): string {
     document.getElementById('alias').textContent = meta.alias || '';
     document.getElementById('retrievedAt').textContent = meta.retrievedAt || '';
 
-    // シート名 맵핑（ファイル名 -> label）
-    const fileToLabel = {};
-    tsvDataList.forEach(d => {
-      fileToLabel[d.name] = d.meta.label || d.name.replace('.tsv', '');
-    });
-
-    // タブ作成
     const tabsContainer = document.getElementById('tabs');
     tsvDataList.forEach((data, i) => {
       const tab = document.createElement('div');
@@ -140,9 +113,6 @@ function generateHtml(tsvDataList: TsvData[], meta: any): string {
         activeTable.destroy();
       }
 
-      const metaRowCount = Object.keys(data.meta).length;
-      const headerRow = metaRowCount + 1;
-
       activeTable = new Tabulator("#table", {
         data: tableData,
         layout: "fitDataFill",
@@ -162,13 +132,14 @@ function generateHtml(tsvDataList: TsvData[], meta: any): string {
       loadTable(fileName);
     }
 
-    // 初始テーブルを読み込み
     if (tsvDataList.length > 0) {
       loadTable(tsvDataList[0].name);
     }
   </script>
 </body>
 </html>`;
-}
 
-main();
+  const outputPath = path.join(standaloneDir, "viewer.html");
+  fs.writeFileSync(outputPath, html);
+  console.log(`standaloneHtml/viewer.html に保存しました。`);
+}

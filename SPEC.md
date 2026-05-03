@@ -77,14 +77,21 @@ npx ts-node src/index.ts dev1
 
 ### 個別実行
 - 処理1のみ: `SF_ALIAS=dev npx ts-node src/retrieveData.ts`
-- 処理2のみ: `npx ts-node src/generateDesignDoc.ts`
-- スタンダアロンHTML生成: `npx ts-node src/generateStandaloneHtml.ts`
+- 処理2のみ: `npx ts-node src/generateDesignDoc.ts`（TSVとスタンダアロンHTMLを両方生成）
 
 ### スタンダアロンHTML
-- `out_designDoc/` の全TSVデータをHTML内に埋め込んで、単独で開けるHTMLファイルを生成
+- 処理2の実行時に `out_designDoc/` の全TSVデータをHTML内に埋め込んで、単独で開けるHTMLファイルを生成
 - 出力先: `standaloneHtml/viewer.html`
 - 外部依存なし（CDNは使用）
 - 表示仕様はHTML Viewerと同じ（Tabulator使用、タブ切り替え）
+
+---
+
+## 追加機能
+
+### HTML Viewer で表示
+- ローカルサーバーを使って `html/index.html` で表示
+- `npx http-server . -p 8080` で起動
 
 ### Google SpreadSheet への反映
 - GAS（Google Apps Script）を使用して `out_designDoc/` を Google SpreadSheet に反映
