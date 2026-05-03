@@ -48,6 +48,12 @@ npm install
 npx ts-node src/index.ts
 ```
 
+基本設計書を生成する（TSV形式）:
+
+```bash
+npx ts-node src/generateDesignDoc.ts
+```
+
 ## 出力ファイル
 
 すべての出力は `output/` ディレクトリに保存されます。
@@ -58,6 +64,13 @@ npx ts-node src/index.ts
 - `output/flowDefinitions.json` - 取得した FlowDefinition 一覧
 - `output/flows.json` - 取得した FlowRecord 一覧
 - `output/cronJobs.json` - 取得した CronTrigger 一覧
+
+## 基本設計書（TSV）
+
+基本設計書は `out_designDoc/` ディレクトリに保存されます。
+
+- `out_designDoc/fields.tsv` - 項目一覧
+- `out_designDoc/meta.json` - メタデータ（alias, retrievedAt）
 
 ## テストの実行方法
 

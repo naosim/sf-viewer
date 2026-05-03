@@ -1,10 +1,11 @@
 import * as fs from "fs";
 import * as path from "path";
-import { SfClient, loadConfig, IFileSaver } from "./sfUtil";
+import { SfClient, loadConfig, IFileSaver, formatTimestamp } from "./sfUtil";
 import { RetrieveSalesforce } from "./retrieveSalesforce";
 
-const formatTimestamp = (date: Date): string => {
-  return `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}${String(date.getDate()).padStart(2, "0")}_${String(date.getHours()).padStart(2, "0")}${String(date.getMinutes()).padStart(2, "0")}${String(date.getSeconds()).padStart(2, "0")}`;
+const normalizeToArray = <T>(value: T | T[] | undefined | null): T[] => {
+  if (value === undefined || value === null) return [];
+  return Array.isArray(value) ? value : [value];
 };
 
 async function main() {
@@ -60,9 +61,15 @@ async function main() {
   }
 
   const retrievedAt = new Date();
+  const queryJobs = normalizeToArray(config.queryJobs).map((job: any) => ({
+    fileName: job.fileName,
+    label: job.label,
+    tooling: job.tooling,
+  }));
   const meta = {
     alias: alias,
     retrievedAt: retrievedAt.toLocaleString(),
+    queryJobs: queryJobs,
   };
   fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2));
 

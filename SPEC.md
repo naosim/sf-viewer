@@ -43,14 +43,27 @@ sf-viewerは、Salesforce CLI (`sf`) を通じてSalesforce組織からデータ
     - `label`: 表示用ラベル
 
 #### 処理2
-- 取得したJSONをもとに基本設計書を生成する（現状未実装）
+- 取得したJSONファイル（`output/` ディレクトリ）を元に基本設計書を生成する
+- TSV形式（FrontMatterTSV）で出力
+- 出力先: `out_designDoc/` ディレクトリ
+- 出力ファイル:
+  - `out_designDoc/fields.tsv` - 項目一覧（ObjectName, FieldName, Label, DataType, Length）
+  - `out_designDoc/meta.json` - メタデータ（alias, retrievedAt）
+- 出力前に前回出力を `out_designDoc/backup/{timestamp}_{alias}/` にバックアップ
 
 ## 開発工程
 まずは処理1の完成を目指します。処理1が安定したら、処理2の設計と生成ロジックを追加します。
 
 ## 実行
+
+### 処理1: データ取得
 ```
 npx ts-node src/index.ts
+```
+
+### 処理2: 基本設計書生成
+```
+npx ts-node src/generateDesignDoc.ts
 ```
 
 

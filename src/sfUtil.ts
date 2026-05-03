@@ -2,6 +2,10 @@ import { execFile } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 
+export const formatTimestamp = (date: Date): string => {
+  return `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}${String(date.getDate()).padStart(2, "0")}_${String(date.getHours()).padStart(2, "0")}${String(date.getMinutes()).padStart(2, "0")}${String(date.getSeconds()).padStart(2, "0")}`;
+};
+
 const isWindows = process.platform === "win32";
 const gitBashPath = isWindows
   ? fs.existsSync("C:\\Program Files\\Git\\bin\\bash.exe")

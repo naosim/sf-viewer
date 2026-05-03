@@ -18,7 +18,7 @@ yarn-error.log*
 
 # Generated Salesforce output
 output/
-flowrecord_desc.json
+out_designDoc/
 
 # Local env
 .env
