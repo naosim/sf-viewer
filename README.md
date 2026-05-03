@@ -1,5 +1,7 @@
 # sf-viewer
 
+[English version](./README.en.md)
+
 Salesforce組織の構成情報を取得し、基本設計書として可視化するツールです。
 
 ## ユースケース
