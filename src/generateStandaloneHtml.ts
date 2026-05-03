@@ -61,9 +61,11 @@ export function generateStandaloneHtml(outputDir: string, meta: any) {
     });
   }
 
-  const tsvDataJson = JSON.stringify(tsvDataList);
+const tsvDataJson = JSON.stringify(tsvDataList);
   const mdDataJson = JSON.stringify(mdDataList);
   const metaJson = JSON.stringify(meta);
+
+  const viewerJs = fs.readFileSync(path.join(__dirname, "html/js/viewer.js"), "utf8");
 
   const html = `<!DOCTYPE html>
 <html lang="ja">
@@ -101,13 +103,13 @@ export function generateStandaloneHtml(outputDir: string, meta: any) {
   <header>
     <h1>SF Viewer - 基本設計書</h1>
     <div class="meta">
-      <span id="alias"></span> |
+      <span id="alias"></span> | 
       <span id="retrievedAt"></span>
     </div>
   </header>
-
+  
   <div class="tabs" id="tabs"></div>
-
+  
   <div class="content">
     <div class="table-container">
       <div id="table"></div>
@@ -119,144 +121,11 @@ export function generateStandaloneHtml(outputDir: string, meta: any) {
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
   <script>
-    mermaid.initialize({ startOnLoad: false });
-
     const tsvDataList = ${tsvDataJson};
     const mdDataList = ${mdDataJson};
     const meta = ${metaJson};
-
-    document.getElementById('alias').textContent = meta.alias || '';
-    document.getElementById('retrievedAt').textContent = meta.retrievedAt || '';
-
-    const tabsContainer = document.getElementById('tabs');
-    tsvDataList.forEach((data, i) => {
-      const tab = document.createElement('div');
-      tab.className = 'tab';
-      tab.textContent = data.meta.label || data.name.replace('.tsv', '');
-      tab.dataset.file = data.name;
-      tab.dataset.type = 'tsv';
-      tab.onclick = () => switchTab(data.name, 'tsv');
-      tabsContainer.appendChild(tab);
-    });
-
-    mdDataList.forEach((data, i) => {
-      const tab = document.createElement('div');
-      tab.className = 'tab' + (tsvDataList.length === 0 && i === 0 ? ' active' : '');
-      tab.textContent = data.meta.label || data.name.replace('.md', '');
-      tab.dataset.file = data.name;
-      tab.dataset.type = 'markdown';
-      tab.onclick = () => switchTab(data.name, 'markdown');
-      tabsContainer.appendChild(tab);
-    });
-
-    // Set initial active tab
-    if (tsvDataList.length > 0) {
-      tabsContainer.firstElementChild.classList.add('active');
-    }
-
-    let activeTable = null;
-
-    function loadTable(fileName) {
-      const data = tsvDataList.find(d => d.name === fileName);
-      if (!data) return;
-
-      document.getElementById('markdown').style.display = 'none';
-      document.getElementById('table').style.display = '';
-
-      const tableData = data.rows.map(row => {
-        const obj = {};
-        data.headers.forEach((header, i) => {
-          obj[header] = row[i];
-        });
-        return obj;
-      });
-
-      if (activeTable) {
-        activeTable.destroy();
-      }
-
-      activeTable = new Tabulator("#table", {
-        data: tableData,
-        layout: "fitDataFill",
-        height: "600px",
-        columns: data.headers.map(header => ({
-          title: header,
-          field: header,
-          headerFilter: "input",
-          sortable: true
-        })),
-      });
-    }
-
-    function loadMarkdown(fileName) {
-      const data = mdDataList.find(d => d.name === fileName);
-      if (!data) {
-        console.error('Markdown data not found:', fileName);
-        return;
-      }
-
-      if (activeTable) {
-        activeTable.destroy();
-        activeTable = null;
-      }
-
-      document.getElementById('table').style.display = 'none';
-      const mdDiv = document.getElementById('markdown');
-      mdDiv.style.display = 'block';
-
-      try {
-        // markedの設定：codeブロックをmermaidとして扱う
-        const htmlContent = marked.parse(data.content, {
-          breaks: true,
-        });
-        mdDiv.innerHTML = htmlContent;
-
-        if (typeof mermaid !== 'undefined') {
-          // mermaid blockを检测して描画
-          mdDiv.querySelectorAll('pre').forEach(async (pre) => {
-            const code = pre.querySelector('code');
-            if (code && (code.classList.contains('language-mermaid') ||
-                code.textContent?.includes('graph ') ||
-                code.textContent?.includes('sequenceDiagram') ||
-                code.textContent?.includes('flowchart'))) {
-              const graphDefinition = code.textContent;
-              pre.classList.add('mermaid');
-              try {
-                const { svg } = await mermaid.render('mermaid-' + Math.random().toString(36).substr(2, 9), graphDefinition);
-                pre.innerHTML = svg;
-              } catch (err) {
-                console.error('Mermaid error:', err);
-                pre.textContent = graphDefinition;
-              }
-            }
-          });
-        }
-      } catch (e) {
-        console.error('Error rendering markdown:', e);
-        mdDiv.innerHTML = '<pre>' + data.content + '</pre>';
-      }
-    }
-
-    function switchTab(fileName, type) {
-      console.log('switchTab called:', fileName, type);
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      const targetTab = document.querySelector('.tab[data-file="' + fileName + '"]');
-      if (targetTab) {
-        targetTab.classList.add('active');
-      }
-      if (type === 'tsv') {
-        loadTable(fileName);
-      } else {
-        console.log('Loading markdown for:', fileName);
-        loadMarkdown(fileName);
-      }
-    }
-
-    if (tsvDataList.length > 0) {
-      switchTab(tsvDataList[0].name, 'tsv');
-    } else if (mdDataList.length > 0) {
-      switchTab(mdDataList[0].name, 'markdown');
-    }
+    ${viewerJs}
+    initViewer(tsvDataList, mdDataList, meta);
   </script>
 </body>
 </html>`;
