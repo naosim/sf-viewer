@@ -1,10 +1,9 @@
-// 設定
-const CONFIG = {
-  DRIVE_FOLDER_ID: '1G-irkqSLnwuQ9ZrQzLBx66tlYv4e36pp',
-  SPREADSHEET_ID: '1z8ROPd3FrdwiEsuH6OA3tSv2_u6fd_TzKjiYDaOwqPE'
-};
-
 function run() {
+  // 設定チェック
+  if (CONFIG.DRIVE_FOLDER_ID === 'YOUR_DRIVE_FOLDER_ID' || CONFIG.SPREADSHEET_ID === 'YOUR_SPREADSHEET_ID') {
+    throw new Error('エラー: config.gs の DRIVE_FOLDER_ID と SPREADSHEET_ID を正しく設定してください。');
+  }
+
   console.log('=== 開始 ===');
 
   const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
@@ -47,15 +46,26 @@ function run() {
         sheet = ss.insertSheet(sheetName);
       }
 
+      // メタ情報を1行目から順に書き込み
+      const metaRows = Object.entries(parsed.meta).map(([key, value]) => [key, value]);
+      if (metaRows.length > 0) {
+        sheet.getRange(1, 1, metaRows.length, 2).setValues(metaRows);
+        console.log(` Wrote ${metaRows.length} metadata entries`);
+      }
+
+      const metaRowCount = metaRows.length;
+      const headerRow = metaRowCount + 1;
+      const dataStartRow = headerRow + 1;
+
       // ヘッダー書き込み
       if (parsed.headers.length > 0) {
-        sheet.getRange(1, 1, 1, parsed.headers.length).setValues([parsed.headers]);
+        sheet.getRange(headerRow, 1, 1, parsed.headers.length).setValues([parsed.headers]);
         console.log(` Wrote headers: ${parsed.headers.length} columns`);
       }
 
       // データ書き込み
       if (parsed.rows.length > 0) {
-        sheet.getRange(2, 1, parsed.rows.length, parsed.headers.length).setValues(parsed.rows);
+        sheet.getRange(dataStartRow, 1, parsed.rows.length, parsed.headers.length).setValues(parsed.rows);
         console.log(` Wrote ${parsed.rows.length} rows`);
       }
 

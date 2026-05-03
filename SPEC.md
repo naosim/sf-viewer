@@ -79,4 +79,19 @@ npx ts-node src/index.ts dev1
 - 処理1のみ: `SF_ALIAS=dev npx ts-node src/retrieveData.ts`
 - 処理2のみ: `SF_ALIAS=dev npx ts-node src/generateDesignDoc.ts`
 
+### Google SpreadSheet への反映
+- GAS（Google Apps Script）を使用して `out_designDoc/` を Google SpreadSheet に反映
+- GAS のソースは `gas/index.gs` と `gas/config.gs` に保存
+- 設定（`gas/config.gs` を編集）:
+  - `DRIVE_FOLDER_ID`: TSVファイルを配置するGoogle DriveフォルダID
+  - `SPREADSHEET_ID`: 反映先のSpreadSheet ID
+- 設定値が未編集の場合はエラーが表示されます
+- 処理内容:
+  1. DriveフォルダからTSVファイルを取得
+  2. 既存の同名シートをクリア（新規作成の場合は作成）
+  3. 各TSVのメタ情報（alias, retrievedAt, labelなど）をシートの1行目부터書き込む
+  4. その後にヘッダーとデータを書き込み
+- meta.json の内容は `meta` シートに書き込む
+- 実行は手動（`run()` 関数を実行）
+
 

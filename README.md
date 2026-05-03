@@ -77,6 +77,15 @@ npx ts-node src/index.ts dev1
 
 2. ブラウザーで `http://localhost:8080/html/index.html` にアクセス
 
+### 5. Google SpreadSheet へ反映
+
+1. `out_designDoc/` を Google Drive の指定フォルダにアップロード
+2. Google Apps Script のプロジェクトを開く（`gas/index.gs` と `gas/config.gs` を貼り付け）
+3. `gas/config.gs` の設定（DRIVE_FOLDER_ID, SPREADSHEET_ID）を編集
+4. `run()` 関数を実行（設定値が未編集の場合はエラーが表示されます）
+
+各TSVファイルはメタ情報（alias, retrievedAt, labelなど）をシートの1行目부터書き込み、ヘッダーとデータはメタ情報の後に続きます。
+
 ## 出力ファイル
 
 すべての出力は `output/` ディレクトリに保存されます。
