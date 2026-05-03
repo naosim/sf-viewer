@@ -58,47 +58,13 @@ header .meta {
 #table {
     width: 100%;
 }
-#markdown {
+.markdown-body {
     display: none;
     padding: 1rem;
     background: white;
     border-radius: 4px;
 }
-#markdown h1,
-#markdown h2,
-#markdown h3 {
-    margin-top: 1rem;
-    margin-bottom: 0.5rem;
-}
-#markdown table {
-    border-collapse: collapse;
-    width: 100%;
-    margin: 1rem 0;
-}
-#markdown th,
-#markdown td {
-    border: 1px solid #ddd;
-    padding: 8px;
-    text-align: left;
-}
-#markdown th {
-    background-color: #f5f5f5;
-}
-#markdown code {
-    background-color: #f0f0f0;
-    padding: 2px 4px;
-    border-radius: 3px;
-}
-#markdown pre {
-    background-color: #f0f0f0;
-    padding: 1rem;
-    overflow-x: auto;
-    border-radius: 4px;
-}
-#markdown .mermaid {
-    margin: 16px 0;
-    text-align: center;
-}
+
 .loading {
     text-align: center;
     padding: 2rem;

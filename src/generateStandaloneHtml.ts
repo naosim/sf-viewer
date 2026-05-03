@@ -1,6 +1,8 @@
 import * as fs from "fs";
 import * as path from "path";
+import * as ts from "typescript";
 import { FrontMatterTSV } from "./FrontMatterTSV";
+import { runHtmlAddons } from "./runAddons";
 
 interface TsvData {
   name: string;
@@ -79,6 +81,15 @@ export function generateStandaloneHtml(outputDir: string, meta: any) {
     "utf8",
   );
 
+  const htmlCustom = runHtmlAddons(meta);
+
+  const customCssTag = htmlCustom.css
+    ? `\n  <style>${htmlCustom.css}</style>`
+    : "";
+  const customJsTag = htmlCustom.js
+    ? `\n  <script>${htmlCustom.js}</script>`
+    : "";
+
   const html = `<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -86,7 +97,7 @@ export function generateStandaloneHtml(outputDir: string, meta: any) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${pageTitle}</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/tabulator/5.5.0/css/tabulator.min.css" rel="stylesheet">
-  <style>${viewerCss}</style>
+  <style>${viewerCss}</style>${customCssTag}
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.8.1/github-markdown-light.css" integrity="sha512-CxC9MO8FBaaq8vl9yaXHjgWd7uXqx3pWMSBP3daioTTI0gpXijlypuMV67NoE1bPYMzj7ZSNNS0o+jFFdFodgA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body>
@@ -117,7 +128,7 @@ export function generateStandaloneHtml(outputDir: string, meta: any) {
     const tabs = ${tabsJson};
     ${viewerJs}
     initViewer(tsvDataList, mdDataList, meta, tabs);
-  </script>
+  </script>${customJsTag}
 </body>
 </html>`;
 
