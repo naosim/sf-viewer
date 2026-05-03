@@ -5,8 +5,10 @@ import { FrontMatterTSV } from "./FrontMatterTSV";
 
 interface AddonResult {
   meta: { [key: string]: string };
-  headers: string[];
-  rows: string[][];
+  headers?: string[];
+  rows?: string[][];
+  type?: 'tsv' | 'markdown';
+  content?: string;
 }
 
 export function runAddons(inputDir: string, outputDir: string, meta: any): void {
@@ -58,11 +60,27 @@ export function runAddons(inputDir: string, outputDir: string, meta: any): void 
 
       for (let i = 0; i < results.length; i++) {
         const result = results[i];
-        const tsvFileName = `${addonName}_${i}.tsv`;
-        const tsvPath = path.join(outputDir, tsvFileName);
-        const tsv = FrontMatterTSV.stringify(result.meta, result.headers, result.rows);
-        fs.writeFileSync(tsvPath, tsv);
-        console.log(`${tsvFileName} を out_designDoc/${tsvFileName} に保存しました。`);
+        const isMarkdown = result.type === 'markdown';
+        const ext = isMarkdown ? '.md' : '.tsv';
+        const fileName = `${addonName}_${i}${ext}`;
+        const filePath = path.join(outputDir, fileName);
+
+        let content: string;
+        if (isMarkdown && result.content) {
+          // Markdown にも FrontMatter を追加
+          const metaLines = Object.entries(result.meta).map(
+            ([key, value]) => `${key}: ${value}`
+          );
+          content = `---\n${metaLines.join("\n")}\n---\n\n${result.content}`;
+        } else {
+          content = FrontMatterTSV.stringify(
+            result.meta,
+            result.headers || [],
+            result.rows || []
+          );
+        }
+        fs.writeFileSync(filePath, content);
+        console.log(`${fileName} を out_designDoc/${fileName} に保存しました。`);
       }
     } catch (error: any) {
       console.error(`アドオン ${addonFile} の実行中にエラーが発生しました: ${error.message}`);
