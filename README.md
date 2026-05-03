@@ -131,6 +131,27 @@ npx ts-node src/index.ts dev1
 
 基本設計書生成時に `standaloneHtml/viewer.html` に全データを埋め込んだ単独のHTMLファイルを生成します。外部依存なし（CDNは使用）で、単独で開いて表示可能です。
 
+## アドオン
+
+`addons/` ディレクトリに TypeScript ファイルを配置すると、基本設計書生成時に自動的に実行されます。
+
+### インターフェース
+
+```typescript
+type JsonData = { [filename: string]: any };
+
+export function run(inputData: JsonData): { meta: { [key: string]: string }; headers: string[]; rows: string[][] }[] {
+  // output配下のJSONを読んで独自のTSVデータを返す
+  // 戻り値は配列で、複数のファイルを生成可能
+}
+```
+
+### 出力
+
+- ファイル名: `{アドオン名}_{インデックス}.tsv`（例: `myAddon_0.tsv`）
+- ディレクトリ: `out_designDoc/`
+- エラー発生時は処理が中止されます
+
 ## テストの実行方法
 
 ```bash

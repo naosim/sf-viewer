@@ -3,6 +3,7 @@ import * as path from "path";
 import { FrontMatterTSV } from "./FrontMatterTSV";
 import { formatTimestamp } from "./sfUtil";
 import { generateStandaloneHtml } from "./generateStandaloneHtml";
+import { runAddons } from "./runAddons";
 
 interface QueryJob {
   fileName: string;
@@ -142,6 +143,9 @@ function main() {
     convertJsonToTsv(jsonPath, meta, job.label, tsvPath);
     console.log(`${tsvFileName} を out_designDoc/${tsvFileName} に保存しました。`);
   }
+
+  console.log("\n--- アドオンを実行します ---");
+  runAddons(inputDir, outputDir, meta);
 
   console.log("--- 処理2: 完了 ---");
 

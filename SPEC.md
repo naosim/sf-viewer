@@ -85,6 +85,17 @@ npx ts-node src/index.ts dev1
 - 外部依存なし（CDNは使用）
 - 表示仕様はHTML Viewerと同じ（Tabulator使用、タブ切り替え）
 
+### アドオン
+- `addons/` ディレクトリ内のすべての `.ts` ファイルを自動検出・実行
+- インターフェース:
+  ```typescript
+  type JsonData = { [filename: string]: any };
+  export function run(inputData: JsonData): { meta: { [key: string]: string }; headers: string[]; rows: string[][] }[]
+  ```
+- 入力: `output/` 配下のJSONファイル（キーはファイル名、バリューはパース后的オブジェクト）
+- 出力: `out_designDoc/{アドオン名}_{インデックス}.tsv`
+- エラー発生時は処理中止
+
 ---
 
 ## 追加機能
