@@ -11,7 +11,7 @@ function run() {
   const folder = DriveApp.getFolderById(CONFIG.DRIVE_FOLDER_ID);
 
   // フォルダ内のTSVファイルを取得
-  const files = folder.getFilesByType('text/tab-separated');
+  const files = folder.getFiles();
   const fileNames = [];
 
   while (files.hasNext()) {
