@@ -71,6 +71,7 @@ const tsvDataJson = JSON.stringify(tsvDataList);
   const pageTitle = outputMeta.title || "SF Viewer - 基本設計書";
 
   const viewerJs = fs.readFileSync(path.join(__dirname, "html/js/viewer.js"), "utf8");
+  const viewerCss = fs.readFileSync(path.join(__dirname, "html/css/viewer.css"), "utf8");
 
   const html = `<!DOCTYPE html>
 <html lang="ja">
@@ -79,30 +80,7 @@ const tsvDataJson = JSON.stringify(tsvDataList);
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${pageTitle}</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/tabulator/5.5.0/css/tabulator.min.css" rel="stylesheet">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f5f5f5; }
-    header { background-color: #2c3e50; color: white; padding: 1rem 2rem; }
-    header h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
-    header .meta { font-size: 0.875rem; color: #bdc3c7; }
-    .tabs { display: flex; background-color: #34495e; padding: 0 1rem; flex-wrap: wrap; }
-    .tab { padding: 1rem 1.5rem; color: #bdc3c7; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; }
-    .tab:hover { color: white; background-color: #2c3e50; }
-    .tab.active { color: white; border-bottom-color: #3498db; }
-    .content { padding: 1rem; }
-    .table-container { background-color: white; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-    #table { width: 100%; }
-    #markdown { display: none; padding: 1rem; background: white; border-radius: 4px; }
-    #markdown h1, #markdown h2, #markdown h3 { margin-top: 1rem; margin-bottom: 0.5rem; }
-    #markdown table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
-    #markdown th, #markdown td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-    #markdown th { background-color: #f5f5f5; }
-    #markdown code { background-color: #f0f0f0; padding: 2px 4px; border-radius: 3px; }
-    #markdown pre { background-color: #f0f0f0; padding: 1rem; overflow-x: auto; border-radius: 4px; }
-    #markdown .mermaid { margin: 16px 0; text-align: center; }
-    .loading { text-align: center; padding: 2rem; color: #7f8c8d; }
-    .error { text-align: center; padding: 2rem; color: #e74c3c; }
-  </style>
+  <style>${viewerCss}</style>
 </head>
 <body>
   <header>
