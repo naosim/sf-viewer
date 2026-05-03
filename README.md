@@ -222,3 +222,105 @@ npm test
 
 - `Flow` オブジェクトではなく、実行中/実行可能なフローのレコード情報を `FlowRecord` から取得する仕様です
 - Windows では Git Bash を使う際 `bash.exe` が存在する場合に自動的に利用します
+
+
+## QA
+
+## aliasを指定してもうまくいかない
+`ts-node src/index.ts dev_hoge`のようにaliasを正しく指定しても、env.jsonに記載がないと動作しません。
+env.jsonを編集してください。
+
+### オブジェクト定義に表示されないオブジェクトがある
+`config.json` の `objectBlackList` に記載されているオブジェクトは除外されます。これは標準的なオブジェクトや不要なオブジェクトを事前にフィルタリングするための設定です。対象を表示したい場合、`objectBlackList` から該当オブジェクトを削除してください。
+
+### 独自のSOQLでデータを取得するにはどうすればよい？
+`config.json` の `queryJobs` にクエリを追加してください。
+
+```json
+"queryJobs": [
+  {
+    "fileName": "myCustom.json",
+    "query": "SELECT Id, Name FROM Account",
+    "tooling": false,
+    "label": "カスタムデータ"
+  }
+]
+```
+
+各プロパティ:
+- `fileName`: 保存ファイル名（.json）
+- `query`: 実行するSOQL
+- `tooling`: trueでTooling API使用（省略時はfalse）
+- `label`: 基本設計書のタブ名
+
+## 基本設計書に表だけでなくテキストのページも加えたい
+アドオンでMarkdownファイルを出力できます。
+
+```typescript
+// addons/myMarkdown.ts
+export function run(inputData: JsonData): AddonResult[] {
+  return [{
+    meta: { label: "テキストページ" },
+    type: 'markdown',
+    content: "# 見出し\n\nテキスト内容..."
+  }];
+}
+```
+
+## 2つのオブジェクトをjoinしたような表が作りたい
+アドオンで独自のTSVを生成できます。JSONデータを結合して出力：
+
+```typescript
+// addons/joinObjects.ts
+export function run(inputData: JsonData): AddonResult[] {
+  const accountData = inputData.account?.data?.records || [];
+  const contactData = inputData.contact?.data?.records || [];
+  
+  const rows = accountData.map(acc => {
+    const contact = contactData.find(c => c.AccountId === acc.Id);
+    return [acc.Name, contact?.Email || ""];
+  });
+  
+  return [{
+    meta: { label: "AccountとContactの結合" },
+    headers: ["Account名", "連絡先メール"],
+    rows: rows
+  }];
+}
+```
+
+## HTMLViewerでタブの順序を変更したい
+`designDoc*.ts` アドオンで tabs にファイル名の配列を返します。
+
+```typescript
+// addons/designDocCustom.ts
+export function run(
+  inputData: JsonData,
+  tabs: string[],
+  meta: any
+): {
+  tabs?: string[];
+} {
+  return {
+    tabs: ["flows.tsv", "fields.tsv", "flowDefinitions.tsv"]
+  };
+}
+```
+
+## HTMLViewerでタイトルを変えたい
+`designDoc*.ts` アドオンで title を返します。
+
+```typescript
+// addons/designDocCustom.ts
+export function run(
+  inputData: JsonData,
+  tabs: string[],
+  meta: any
+): {
+  title?: string;
+} {
+  return {
+    title: "カスタムタイトル - 基本設計書"
+  };
+}
+```
