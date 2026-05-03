@@ -16,7 +16,7 @@ function run() {
   while (files.hasNext()) {
     const file = files.next();
     const name = file.getName();
-    if (name.endsWith('.tsv')) {
+    if (name.endsWith('.tsv') || name.endsWith('.md')) {
       fileNames.push({ name: name, file: file });
     }
   }
@@ -31,9 +31,19 @@ function run() {
     try {
       console.log(`\n--- Processing: ${name} ---`);
       const content = file.getBlob().getDataAsString();
-      const parsed = parseFrontMatterTSV(content);
+      const isMarkdown = name.endsWith('.md');
 
-      const sheetName = parsed.meta.label || name.replace('.tsv', '');
+      let parsed;
+      let sheetName;
+
+      if (isMarkdown) {
+        parsed = parseFrontMatterMarkdown(content);
+        sheetName = parsed.meta.label || name.replace('.md', '');
+      } else {
+        parsed = parseFrontMatterTSV(content);
+        sheetName = parsed.meta.label || name.replace('.tsv', '');
+      }
+
       console.log(` Sheet name: ${sheetName}`);
 
       // シートの取得または作成
@@ -54,19 +64,68 @@ function run() {
       }
 
       const metaRowCount = metaRows.length;
-      const headerRow = metaRowCount + 1;
-      const dataStartRow = headerRow + 1;
 
-      // ヘッダー書き込み
-      if (parsed.headers.length > 0) {
-        sheet.getRange(headerRow, 1, 1, parsed.headers.length).setValues([parsed.headers]);
-        console.log(` Wrote headers: ${parsed.headers.length} columns`);
-      }
+      if (isMarkdown) {
+        // Markdown: contentを2列以上に書き込み
+        // A列: #で始まる行, B列以降: テーブル cells またはその他
+        const dataStartRow = metaRowCount + 1;
 
-      // データ書き込み
-      if (parsed.rows.length > 0) {
-        sheet.getRange(dataStartRow, 1, parsed.rows.length, parsed.headers.length).setValues(parsed.rows);
-        console.log(` Wrote ${parsed.rows.length} rows`);
+        if (parsed.content && parsed.content.length > 0) {
+          const contentRows = parsed.content
+            .map(line => {
+              // ヘッダー行 (#で始まる)
+              if (line.startsWith('#')) {
+                return [line, ''];
+              }
+
+              // テーブルセパレーターをスキップ
+              if (isTableSeparator(line)) {
+                return null;
+              }
+
+              // テーブル行（|を含む）
+              if (line.includes('|')) {
+                const cells = line.split('|')
+                  .map(cell => cell.trim())
+                  .filter((_, i) => i !== 0 && i !== line.split('|').length - 1);
+                return ['', ...cells];
+              }
+
+              // 通常行（|を含まない）
+              return ['', line];
+            })
+            .filter(row => row !== null);
+
+          // 最大列数を取得
+          const maxCols = contentRows.reduce((max, row) => Math.max(max, row.length), 0);
+
+          // 列数が少ない行は空文字で埋める
+          const paddedRows = contentRows.map(row => {
+            while (row.length < maxCols) {
+              row.push('');
+            }
+            return row;
+          });
+
+          sheet.getRange(dataStartRow, 1, paddedRows.length, maxCols).setValues(paddedRows);
+          console.log(` Wrote ${paddedRows.length} content rows`);
+        }
+      } else {
+        // TSV: 既存の処理
+        const headerRow = metaRowCount + 1;
+        const dataStartRow = headerRow + 1;
+
+        // ヘッダー書き込み
+        if (parsed.headers.length > 0) {
+          sheet.getRange(headerRow, 1, 1, parsed.headers.length).setValues([parsed.headers]);
+          console.log(` Wrote headers: ${parsed.headers.length} columns`);
+        }
+
+        // データ書き込み
+        if (parsed.rows.length > 0) {
+          sheet.getRange(dataStartRow, 1, parsed.rows.length, parsed.headers.length).setValues(parsed.rows);
+          console.log(` Wrote ${parsed.rows.length} rows`);
+        }
       }
 
       console.log(` Done: ${sheetName}`);
@@ -159,4 +218,47 @@ function parseFrontMatterTSV(text) {
 
 function unescapeCell(value) {
   return value.replace(/\\t/g, '\t').replace(/\\n/g, '\n');
+}
+
+function parseFrontMatterMarkdown(text) {
+  const lines = text.split('\n');
+  const meta = {};
+  const content = [];
+  let phase = 'meta';
+  let metaLineCount = 0;
+
+  for (const line of lines) {
+    if (phase === 'meta') {
+      if (line === '---') {
+        if (metaLineCount === 0) {
+          metaLineCount++;
+          continue;
+        } else {
+          phase = 'content';
+          continue;
+        }
+      }
+      if (metaLineCount > 0 && line.trim()) {
+        const colonIndex = line.indexOf(':');
+        if (colonIndex > 0) {
+          const key = line.substring(0, colonIndex).trim();
+          const value = line.substring(colonIndex + 1).trim();
+          meta[key] = value;
+        }
+      }
+    } else if (phase === 'content') {
+      content.push(line);
+    }
+  }
+
+  return { meta, content };
+}
+
+function isTableSeparator(line) {
+  const cells = line.split('|');
+  if (cells.length < 3) return false;
+  return cells.every(cell => {
+    const trimmed = cell.trim();
+    return trimmed === '' || trimmed === '-' || trimmed.startsWith(':') || /^-+$/.test(trimmed);
+  });
 }
