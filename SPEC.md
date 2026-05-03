@@ -31,14 +31,14 @@ sf-viewerは、Salesforce CLI (`sf`) を通じてSalesforce組織からデータ
 - Windows環境では Git Bash が利用可能なら `bash.exe -lc` 経由でコマンドを実行する
 - `sf` コマンドの存在確認を行い、未インストールの場合は利用者にエラーメッセージを表示する
 - alias は `env.json` から取得し、CLI引数またはisDefaultで指定
-- 取得対象データ
+- 取得対象データ（デフォルト）:
   - オブジェクト一覧: `EntityDefinition` (SOQL)
   - 項目一覧: `FieldDefinition` (SOQL)
   - sObject一覧: `sf sobject list --sobject all` コマンドで取得（SOQL以外のCLIコマンドを使用）
   - フロー一覧: `FlowRecord` (SOQL、デフォルトで `LIMIT 200`)
   - FlowDefinition一覧: `FlowDefinition` (Tooling API)
   - 定期起動ジョブ一覧: `CronTrigger` (SOQL)
-- 取得したデータは以下のファイルに保存する
+- 取得的データは `config.json` の `queryJobs` でカスタマイズ可能
   - `output/objects.json`
   - `output/fields.json`
   - `output/sobject-list.json`
@@ -77,7 +77,14 @@ npx ts-node src/index.ts dev1
 
 ### 個別実行
 - 処理1のみ: `SF_ALIAS=dev npx ts-node src/retrieveData.ts`
-- 処理2のみ: `SF_ALIAS=dev npx ts-node src/generateDesignDoc.ts`
+- 処理2のみ: `npx ts-node src/generateDesignDoc.ts`
+- スタンダアロンHTML生成: `npx ts-node src/generateStandaloneHtml.ts`
+
+### スタンダアロンHTML
+- `out_designDoc/` の全TSVデータをHTML内に埋め込んで、単独で開けるHTMLファイルを生成
+- 出力先: `standaloneHtml/viewer.html`
+- 外部依存なし（CDNは使用）
+- 表示仕様はHTML Viewerと同じ（Tabulator使用、タブ切り替え）
 
 ### Google SpreadSheet への反映
 - GAS（Google Apps Script）を使用して `out_designDoc/` を Google SpreadSheet に反映

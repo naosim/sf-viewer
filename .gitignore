@@ -19,6 +19,7 @@ yarn-error.log*
 # Generated Salesforce output
 output/
 out_designDoc/
+standaloneHtml/
 
 # Local env
 .env

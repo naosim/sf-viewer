@@ -5,8 +5,9 @@ sf-viewer は Salesforce CLI を使って Salesforce 組織からメタデータ
 ## 概要
 
 - Salesforce CLI (`npx sf`) を呼び出して Salesforce 組織からデータを取得
-- 取得対象はオブジェクト一覧、項目一覧、sObject一覧、フロー一覧、FlowDefinition、CronTrigger
-- Windows では Git Bash がある場合、`bash.exe -lc` 経由で `npx sf` を実行
+　　- Windows では Git Bash がある場合、`bash.exe -lc` 経由で `npx sf` を実行
+- 取得対象はオブジェクト一覧、項目一覧、sObject一覧など（config.jsonでカスタマイズ可能）
+- 出力形式: TSV, HTML, スタンダアロンHTML, Google SpreadSheet (GAS)
 
 ## 事前準備
 
@@ -44,7 +45,7 @@ sf-viewer は Salesforce CLI を使って Salesforce 組織からメタデータ
 ```
 
 `objectBlackList`: 項目一覧取得時に除外するオブジェクト名の配列
-`queryJobs`: 取得するデータのカスタマイズ（追加・削除・クエリ修正が可能）
+`queryJobs`: 取得するデータのカスタマイズ（追加・削除・クエリ修正が可能）。デフォルトではFlowDefinition、FlowRecord、CronTriggerが含まれる。
 
 ## Getting Started
 
@@ -110,7 +111,12 @@ npx ts-node src/index.ts dev1
 ## 個別実行
 
 - データ取得のみ: `SF_ALIAS=dev npx ts-node src/retrieveData.ts`
-- 基本設計書生成のみ: `SF_ALIAS=dev npx ts-node src/generateDesignDoc.ts`
+- 基本設計書生成のみ: `npx ts-node src/generateDesignDoc.ts`
+- スタンダアロンHTML生成: `npx ts-node src/generateStandaloneHtml.ts`
+
+## スタンダアロンHTML
+
+`standaloneHtml/viewer.html` に全データを埋め込んだ単独のHTMLファイルを生成します。外部依存なし（CDNは使用）で、単独で開いて表示可能です。
 
 ## テストの実行方法
 
