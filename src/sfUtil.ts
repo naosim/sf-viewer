@@ -6,6 +6,11 @@ export const formatTimestamp = (date: Date): string => {
   return `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}${String(date.getDate()).padStart(2, "0")}_${String(date.getHours()).padStart(2, "0")}${String(date.getMinutes()).padStart(2, "0")}${String(date.getSeconds()).padStart(2, "0")}`;
 };
 
+export const normalizeToArray = <T>(value: T | T[] | undefined | null): T[] => {
+  if (value === undefined || value === null) return [];
+  return Array.isArray(value) ? value : [value];
+};
+
 const isWindows = process.platform === "win32";
 const gitBashPath = isWindows
   ? fs.existsSync("C:\\Program Files\\Git\\bin\\bash.exe")

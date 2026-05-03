@@ -1,12 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
-import { SfClient, loadConfig, IFileSaver, formatTimestamp } from "./sfUtil";
+import { SfClient, loadConfig, IFileSaver, formatTimestamp, normalizeToArray } from "./sfUtil";
 import { RetrieveSalesforce } from "./retrieveSalesforce";
-
-const normalizeToArray = <T>(value: T | T[] | undefined | null): T[] => {
-  if (value === undefined || value === null) return [];
-  return Array.isArray(value) ? value : [value];
-};
 
 async function main() {
   console.log("--- 処理1: Salesforceからのデータ取得を開始します ---");
