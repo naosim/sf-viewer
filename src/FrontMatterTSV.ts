@@ -101,4 +101,19 @@ export class FrontMatterTSV {
 
     return { meta, headers, rows };
   }
+
+  static getFilesFromMeta(metaJson: string): { name: string; label: string }[] {
+    const meta = JSON.parse(metaJson);
+    const files: { name: string; label: string }[] = [];
+    files.push({ name: "fields.tsv", label: "オブジェクト定義" });
+    if (meta.queryJobs) {
+      for (const job of meta.queryJobs) {
+        files.push({
+          name: job.fileName.replace(".json", ".tsv"),
+          label: job.label,
+        });
+      }
+    }
+    return files;
+  }
 }

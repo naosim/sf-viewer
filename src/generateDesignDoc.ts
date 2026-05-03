@@ -98,10 +98,13 @@ function main() {
   const inputMeta = JSON.parse(fs.readFileSync(inputMetaPath, "utf8"));
 
   const retrievedAt = new Date();
-  const meta = {
+  const meta: { alias: string; retrievedAt: string; queryJobs?: typeof inputMeta.queryJobs } = {
     alias: inputMeta.alias,
     retrievedAt: retrievedAt.toLocaleString(),
   };
+  if (inputMeta.queryJobs) {
+    meta.queryJobs = inputMeta.queryJobs;
+  }
   fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2));
 
   const fieldsJsonPath = path.join(inputDir, "fields.json");

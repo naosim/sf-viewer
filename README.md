@@ -82,6 +82,26 @@ npm test
 
 テストは `test/` ディレクトリに配置されています。
 
+## HTML Viewer のビルド
+
+HTML Viewer は `src/FrontMatterTSV.ts` をコンパイルした JavaScript を使用します。
+
+```bash
+# src/FrontMatterTSV.ts を html/js/FrontMatterTSV.js にコンパイル
+npx tsc src/FrontMatterTSV.ts --outDir html/js --module ES2022 --target ES2022 --esModuleInterop --skipLibCheck --ignoreConfig
+```
+
+または、手動で `html/js/FrontMatterTSV.js` を更新してください（現在、重複コードが存在します）。
+
+## HTML Viewer の実行
+
+```bash
+# プロジェクトのルートディレクトリでローカルサーバーを起動
+npx http-server . -p 8080
+```
+
+然后、ブラウザーで `http://localhost:8080/html/index.html` にアクセス
+
 ## 補足
 
 - `Flow` オブジェクトではなく、実行中/実行可能なフローのレコード情報を `FlowRecord` から取得する仕様です
