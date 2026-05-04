@@ -73,7 +73,19 @@ You can set any value for alias (-a).
 
 Edit `env.json` and `config.json` (see "Prerequisites" for details).
 
-### 4. Retrieve Data and Generate Design Document
+### 4. Retrieve Object List and Check Blacklist
+
+First, retrieve the object list with `--only-objects` option.
+
+```bash
+npx ts-node src/index.ts --only-objects
+```
+
+The list of objects to be retrieved will be displayed in the log. If there are objects you want to exclude, add them to `objectBlackList` in `config.json`.
+
+### 5. Retrieve Data and Generate Design Document
+
+After updating the blacklist, run normally.
 
 ```bash
 # Use default alias
@@ -83,7 +95,7 @@ npx ts-node src/index.ts
 npx ts-node src/index.ts dev1
 ```
 
-### 5. Open Standalone HTML
+### 6. Open Standalone HTML
 
 Open `standaloneHtml/viewer.html` in a browser to view the design document.
 

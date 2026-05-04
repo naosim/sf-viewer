@@ -7,12 +7,12 @@ interface EnvEntry {
   isDefault?: boolean;
 }
 
-function getAliasFromArgs(args: string[]): string | null {
-  const aliasIndex = args.findIndex((arg) => arg !== "--");
-  if (aliasIndex >= 0 && aliasIndex < args.length) {
-    return args[aliasIndex];
-  }
-  return null;
+function getAliasFromArgs(args: string[]): { alias: string | null; onlyObjects: boolean } {
+  const onlyObjects = args.includes("--only-objects");
+  const aliasArgs = args.filter((arg) => arg !== "--" && arg !== "--only-objects");
+  const aliasIndex = aliasArgs.findIndex((arg) => !arg.startsWith("-"));
+  const alias = aliasIndex >= 0 && aliasIndex < aliasArgs.length ? aliasArgs[aliasIndex] : null;
+  return { alias, onlyObjects };
 }
 
 function loadEnvAlias(requestedAlias: string | null): string {
@@ -38,17 +38,25 @@ function loadEnvAlias(requestedAlias: string | null): string {
   return defaultEnv.alias;
 }
 
-const runScript = (scriptPath: string, alias: string): Promise<void> => {
+const runScript = (
+  scriptPath: string,
+  alias: string,
+  onlyObjects: boolean,
+): Promise<boolean> => {
   return new Promise((resolve, reject) => {
     const child = spawn("npx", ["ts-node", scriptPath], {
       stdio: "inherit",
       shell: true,
-      env: { ...process.env, SF_ALIAS: alias },
+      env: {
+        ...process.env,
+        SF_ALIAS: alias,
+        SF_ONLY_OBJECTS: onlyObjects ? "true" : "false",
+      },
     });
 
     child.on("close", (code) => {
       if (code === 0) {
-        resolve();
+        resolve(onlyObjects);
       } else {
         reject(new Error(`Script ${scriptPath} exited with code ${code}`));
       }
@@ -61,18 +69,25 @@ const runScript = (scriptPath: string, alias: string): Promise<void> => {
 };
 
 async function main() {
-  const requestedAlias = getAliasFromArgs(process.argv.slice(2));
+  const { alias: requestedAlias, onlyObjects } = getAliasFromArgs(
+    process.argv.slice(2),
+  );
   const alias = loadEnvAlias(requestedAlias);
 
   console.log("=== Salesforce データ取得と基本設計書生成 ===\n");
-  console.log(`対象エイリアス: ${alias}\n`);
+  console.log(`対象エイリアス: ${alias}${onlyObjects ? " (--only-objects)" : ""}\n`);
 
   try {
     console.log("--- 処理1: Salesforceからデータを取得します ---");
-    await runScript("src/retrieveData.ts", alias);
+    const isOnlyObjects = await runScript("src/retrieveData.ts", alias, onlyObjects);
+
+    if (isOnlyObjects) {
+      console.log("\n--only-objects オプションのため処理を終了します。");
+      process.exit(0);
+    }
 
     console.log("\n--- 処理2: 基本設計書を生成します ---");
-    await runScript("src/generateDesignDoc.ts", alias);
+    await runScript("src/generateDesignDoc.ts", alias, false);
 
     console.log("\n=== 全ての処理が完了しました ===");
   } catch (error: any) {

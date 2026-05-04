@@ -88,19 +88,24 @@ export class RetrieveSalesforce {
     return errorMsg;
   }
 
-  async run() {
+  async run(onlyObjects?: boolean) {
     const config = this.config;
     const queryJobs = normalizeToArray(config.queryJobs);
 
-    const { objectRepository, sobjectRepository } =
-      await this.fetchBaseData();
+    const baseData = await this.fetchBaseData(onlyObjects);
+    if (baseData.onlyObjects) {
+      return { onlyObjects: true };
+    }
+
+    const { objectRepository, sobjectRepository } = baseData as { objectRepository: ObjectRepository; sobjectRepository: SobjectRepository };
 
     await this.runQueryJobs(queryJobs, objectRepository, sobjectRepository);
 
     console.log("--- 処理1: 完了 ---");
+    return {};
   }
 
-  async fetchBaseData() {
+  async fetchBaseData(onlyObjects?: boolean) {
     const sfClient = this.sfClient;
     const config = this.config;
 
@@ -117,6 +122,22 @@ export class RetrieveSalesforce {
     const objectBlackListArray = normalizeToArray(
       config.objectBlackList,
     ).filter((value): value is string => typeof value === "string");
+
+    const allObjects = objectsData.result?.records || [];
+    const filteredObjects = allObjects.filter(
+      (obj: any) => !objectBlackListArray.includes(obj.QualifiedApiName),
+    );
+    console.log(
+      `\n取得予定オブジェクト: ${filteredObjects.length} 件\n${filteredObjects
+        .map((o: any) => o.QualifiedApiName)
+        .join(", ")}`,
+    );
+
+    if (onlyObjects) {
+      console.log("--only-objects オプションのためここで終了します。");
+      return { onlyObjects: true };
+    }
+
     await sfClient.saveFieldsFile(objectBlackListArray);
 
     await sfClient.saveSobjectListFile();

@@ -74,7 +74,19 @@ alias(-a)の値も任意の値にできます。
 
 `env.json` と `config.json` を編集します（詳細は「事前準備」を参照）。
 
-### 4. データ取得と基本設計書生成
+### 4. オブジェクト一覧の取得とblacklistの確認
+
+まず、`--only-objects` オプションでオブジェクト一覧を取得します。
+
+```bash
+npx ts-node src/index.ts --only-objects
+```
+
+取得対象のオブジェクト一覧がログに出力されます。不要なオブジェクトがあれば `config.json` の `objectBlackList` に追加してください。
+
+### 5. データ取得と基本設計書生成
+
+blacklistを更新したら、通常通り実行します。
 
 ```bash
 # デフォルトのaliasを使用する場合
@@ -84,7 +96,7 @@ npx ts-node src/index.ts
 npx ts-node src/index.ts dev1
 ```
 
-### 5. スタンダアロンHTMLを開く
+### 6. スタンダアロンHTMLを開く
 
 `standaloneHtml/viewer.html` をブラウザで開いて確認します。
 

@@ -7,6 +7,7 @@ async function main() {
   console.log("--- 処理1: Salesforceからのデータ取得を開始します ---");
 
   const alias = process.env.SF_ALIAS;
+  const onlyObjects = process.env.SF_ONLY_OBJECTS === "true";
   if (!alias) {
     throw new Error("エラー: SF_ALIAS 環境変数が設定されていません。");
   }
@@ -76,7 +77,7 @@ async function main() {
     config,
     sfClient as IFileSaver,
   );
-  retrieveSalesforce.run();
+  retrieveSalesforce.run(onlyObjects);
 }
 
 main().catch((error: any) => {
