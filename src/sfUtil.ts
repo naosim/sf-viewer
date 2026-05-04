@@ -11,14 +11,25 @@ export const normalizeToArray = <T>(value: T | T[] | undefined | null): T[] => {
   return Array.isArray(value) ? value : [value];
 };
 
-const isWindows = process.platform === "win32";
-const gitBashPath = isWindows
-  ? fs.existsSync("C:\\Program Files\\Git\\bin\\bash.exe")
-    ? "C:\\Program Files\\Git\\bin\\bash.exe"
-    : fs.existsSync("C:\\Program Files (x86)\\Git\\bin\\bash.exe")
-      ? "C:\\Program Files (x86)\\Git\\bin\\bash.exe"
-      : undefined
-  : undefined;
+function findGitBashPath(): string | undefined {
+  if (process.platform !== "win32") {
+    return undefined;
+  }
+
+  const gitBashPath = "C:\\Program Files\\Git\\bin\\bash.exe";
+  if (fs.existsSync(gitBashPath)) {
+    return gitBashPath;
+  }
+
+  const gitBashPathX86 = "C:\\Program Files (x86)\\Git\\bin\\bash.exe";
+  if (fs.existsSync(gitBashPathX86)) {
+    return gitBashPathX86;
+  }
+
+  return undefined;
+}
+
+const gitBashPath = findGitBashPath();
 const useGitBash = !!gitBashPath;
 
 const shellEscape = (value: string): string => {
@@ -29,59 +40,62 @@ export interface IFileSaver {
   saveJson(fileName: string, data: any): void;
 }
 
-// 汎用コマンド実行ヘルパー
+interface CommandExecutor {
+  cmd: string;
+  args: string[];
+  logMessage: string;
+}
+
+type ExecutorCreator = (cmd: string, args: string[]) => CommandExecutor;
+
+function createGitBashExecutor(cmd: string, args: string[]): CommandExecutor {
+  const commandString = [cmd, ...args].map(shellEscape).join(" ");
+  return {
+    cmd: gitBashPath!,
+    args: ["-lc", commandString],
+    logMessage: `[sf command] ${commandString} (git-bash)`,
+  };
+}
+
+function createCmdExecutor(cmd: string, args: string[]): CommandExecutor {
+  const formattedArgs = args.map((arg) => (/\s/.test(arg) ? `"${arg}"` : arg)).join(" ");
+  const commandString = `${cmd} ${formattedArgs}`;
+  return {
+    cmd: process.env.comspec || "cmd.exe",
+    args: ["/c", cmd, ...args],
+    logMessage: `[sf command] ${commandString} (cmd)`,
+  };
+}
+
+function createShellExecutor(cmd: string, args: string[]): CommandExecutor {
+  const formattedArgs = args.map((arg) => (/\s/.test(arg) ? `"${arg}"` : arg)).join(" ");
+  const commandString = `${cmd} ${formattedArgs}`;
+  return {
+    cmd: cmd,
+    args: args,
+    logMessage: `[sf command] ${commandString}`,
+  };
+}
+
+const executorCreator: ExecutorCreator = gitBashPath
+  ? createGitBashExecutor
+  : process.platform === "win32"
+    ? createCmdExecutor
+    : createShellExecutor;
+
 export const execPromise = (
   cmd: string,
   args: string[],
-  useShell: boolean = useGitBash,
 ): Promise<{ stdout: string; stderr: string }> => {
   return new Promise((resolve, reject) => {
-    const shellCmd = cmd === "sf" ? "npx" : cmd;
-    let actualCmd: string;
-    let actualArgs: string[];
+    const effectiveCmd = cmd === "sf" ? "npx" : cmd;
+    const effectiveArgs = cmd === "sf" ? ["sf", ...args] : args;
+    const executor = executorCreator(effectiveCmd, effectiveArgs);
+    console.log(executor.logMessage);
 
-    if (useShell && useGitBash) {
-      actualCmd = shellCmd;
-      actualArgs = cmd === "sf" ? ["sf", ...args] : args;
-    } else if (process.platform === "win32" && cmd === "sf") {
-      actualCmd = process.env.comspec || "cmd.exe";
-      actualArgs = ["/c", "npx", "sf", ...args];
-    } else {
-      actualCmd = cmd === "sf" ? "npx" : cmd;
-      actualArgs = cmd === "sf" ? ["sf", ...args] : args;
-    }
-
-    if (useShell && useGitBash) {
-      const commandString = [actualCmd, ...actualArgs]
-        .map(shellEscape)
-        .join(" ");
-      console.log(`[sf command] ${commandString} (git-bash)`);
-      execFile(
-        gitBashPath!,
-        ["-lc", commandString],
-        { maxBuffer: 1024 * 1024 * 50 },
-        (error, stdout, stderr) => {
-          if (error) {
-            const err: any = error;
-            err.stdout = stdout;
-            err.stderr = stderr;
-            reject(err);
-          } else {
-            resolve({ stdout, stderr });
-          }
-        },
-      );
-      return;
-    }
-
-    const formatted = [
-      actualCmd,
-      ...actualArgs.map((arg) => (/\s/.test(arg) ? `"${arg}"` : arg)),
-    ].join(" ");
-    console.log(`[sf command] ${formatted}`);
     execFile(
-      actualCmd,
-      actualArgs,
+      executor.cmd,
+      executor.args,
       { maxBuffer: 1024 * 1024 * 50 },
       (error, stdout, stderr) => {
         if (error) {
@@ -116,7 +130,7 @@ const _runSf = (
     sfArgs.push("--json");
   }
 
-  return execPromise("sf", sfArgs, options.useShell ?? useGitBash);
+  return execPromise("sf", sfArgs);
 };
 
 export interface SfQueryResult<T = any> {
