@@ -42,16 +42,24 @@ Example: `config.json`
   "queryJobs": [
     {
       "fileName": "flowDefinitions.json",
-      "query": "SELECT Id, DeveloperName, MasterLabel FROM FlowDefinition ORDER BY DeveloperName",
+      "objectName": "FlowDefinition",
+      "columns": ["Id", "DeveloperName", "MasterLabel"],
       "tooling": true,
-      "label": "FlowDefinition List"
+      "label": "FlowDefinition List",
+      "queryOption": "ORDER BY DeveloperName"
     }
   ]
 }
 ```
 
 `objectBlackList`: Array of object names to exclude from field list retrieval
-`queryJobs`: Customize data to retrieve (add/remove/modify queries). By default includes FlowDefinition, FlowRecord, CronTrigger.
+`queryJobs`: Customize data to retrieve. Properties:
+- `fileName`: Output filename (.json)
+- `objectName`: Target object name
+- `columns`: Array of columns to retrieve. Use `"*"` to retrieve all columns from fields.json
+- `tooling`: Use Tooling API if true (default: false)
+- `label`: Tab name in design document
+- `queryOption`: Options after FROM clause (e.g., `"ORDER BY Name LIMIT 100"`)
 
 ## Getting Started
 
@@ -251,18 +259,22 @@ Add your query to `config.json` `queryJobs`.
 "queryJobs": [
   {
     "fileName": "myCustom.json",
-    "query": "SELECT Id, Name FROM Account",
+    "objectName": "Account",
+    "columns": ["Id", "Name"],
     "tooling": false,
-    "label": "Custom Data"
+    "label": "Custom Data",
+    "queryOption": "ORDER BY Name"
   }
 ]
 ```
 
 Properties:
 - `fileName`: Output filename (.json)
-- `query`: SOQL to execute
+- `objectName`: Target object name
+- `columns`: Array of columns. Use `"*"` for all columns from fields.json
 - `tooling`: Use Tooling API if true (default: false)
 - `label`: Tab name in design document
+- `queryOption`: Options after FROM clause
 
 ### How to add text pages (not just tables) to design document?
 You can output Markdown files with add-ons.

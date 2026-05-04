@@ -204,24 +204,63 @@
     "WorkTypeGroup",
     "WorkTypeGroupMember"
   ],
-  "queryJobs":[
-      {
-        "fileName": "flowDefinitions.json",
-        "query": "SELECT Id, DeveloperName, MasterLabel, ActiveVersionId, LatestVersionId FROM FlowDefinition ORDER BY DeveloperName",
-        "tooling": true,
-        "label": "FlowDefinition一覧"
-      },
-      {
-        "fileName": "flows.json",
-        "query": "SELECT Id, Name, FlowLabel, ApiName, ProgressStatus, IsPaused, FlowType, FlowDefinition, CreatedDate, LastModifiedDate FROM FlowRecord LIMIT 200",
-        "tooling": false,
-        "label": "フロー一覧（レコードとして）"
-      },
-      {
-        "fileName": "cronJobs.json",
-        "query": "SELECT Id, CronExpression, NextFireTime, PreviousFireTime, State, CronJobDetail.Name, CronJobDetail.JobType FROM CronTrigger ORDER BY NextFireTime",
-        "tooling": false,
-        "label": "定期起動ジョブ一覧（CronTrigger）"
-      }
-    ]
+  "queryJobs": [
+    {
+      "fileName": "flowDefinitions.json",
+      "objectName": "FlowDefinition",
+      "columns": [
+        "Id",
+        "DeveloperName",
+        "MasterLabel",
+        "ActiveVersionId",
+        "LatestVersionId"
+      ],
+      "tooling": true,
+      "label": "FlowDefinition一覧",
+      "queryOption": "ORDER BY DeveloperName"
+    },
+    {
+      "fileName": "flows.json",
+      "objectName": "FlowRecord",
+      "columns": [
+        "Id",
+        "Name",
+        "FlowLabel",
+        "ApiName",
+        "ProgressStatus",
+        "IsPaused",
+        "FlowType",
+        "FlowDefinition",
+        "CreatedDate",
+        "LastModifiedDate"
+      ],
+      "tooling": false,
+      "label": "フロー一覧（レコードとして）",
+      "queryOption": "LIMIT 200"
+    },
+    {
+      "fileName": "cronJobs.json",
+      "objectName": "CronTrigger",
+      "columns": [
+        "Id",
+        "CronExpression",
+        "NextFireTime",
+        "PreviousFireTime",
+        "State",
+        "CronJobDetail.Name",
+        "CronJobDetail.JobType"
+      ],
+      "tooling": false,
+      "label": "定期起動ジョブ一覧（CronTrigger）",
+      "queryOption": "ORDER BY NextFireTime"
+    },
+    {
+      "fileName": "product2.json",
+      "objectName": "Product2",
+      "columns": "*",
+      "tooling": false,
+      "label": "商品",
+      "queryOption": "ORDER BY Name"
+    }
+  ]
 }

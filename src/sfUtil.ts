@@ -244,6 +244,62 @@ export class SfClient implements IFileSaver {
     return parsed;
   }
 
+  async saveMetadataFieldsFile(objectNames: string[]): Promise<any> {
+    const fileName = "sobjectFields.json";
+    console.log("メタデータオブジェクトのフィールドを取得中...");
+
+    const allMetadataFields: any[] = [];
+
+    const chunkSize = 10;
+    for (let i = 0; i < objectNames.length; i += chunkSize) {
+      const chunk = objectNames.slice(i, i + chunkSize);
+
+      await Promise.all(
+        chunk.map(async (objName: string) => {
+          try {
+            const result = await this.runSf(
+              ["sobject", "describe", "--sobject", objName],
+              { alias: this.alias, json: true },
+            );
+            const debugFileName = `debug_${objName}_describe.json`;
+            this.saveJson(debugFileName, JSON.parse(result.stdout));
+            console.log(`  ${objName} のレスポンスを output/${debugFileName} に保存しました`);
+
+            const referenceDir = path.join(__dirname, "../spec-reference");
+            if (!fs.existsSync(referenceDir)) {
+              fs.mkdirSync(referenceDir, { recursive: true });
+            }
+            fs.writeFileSync(
+              path.join(referenceDir, debugFileName),
+              result.stdout,
+            );
+            console.log(`  ${objName} のレスポンスを spec-reference/${debugFileName} に保存しました`);
+
+            const parsed = JSON.parse(result.stdout);
+            const fields = parsed.result?.fields || [];
+            allMetadataFields.push({
+              objectName: objName,
+              fields: fields.map((f: any) => ({
+                name: f.name,
+                label: f.label,
+                type: f.type,
+              })),
+            });
+            console.log(`  ${objName}: ${fields.length} fields`);
+          } catch (err) {
+            console.warn(`  警告: ${objName} のメタデータ取得に失敗しました。`);
+          }
+        }),
+      );
+    }
+
+    this.saveJson(fileName, allMetadataFields);
+    console.log(
+      `メタデータオブジェクトのフィールドを取得し、output/${fileName} に保存しました。（${allMetadataFields.length} オブジェクト）`,
+    );
+    return allMetadataFields;
+  }
+
   loadObjectsJson(): any {
     const filePath = path.join(this.outputDir, SfClient.objectsJsonFileName);
     if (!fs.existsSync(filePath)) {
@@ -348,6 +404,7 @@ export class SfClient implements IFileSaver {
   static sobjectListJsonFileName = "sobject-list.json";
   static objectsJsonFileName = "objects.json";
   static fieldsJsonFileName = "fields.json";
+  static sobjectFieldsJsonFileName = "sobjectFields.json";
 }
 
 export class ObjectRepository {

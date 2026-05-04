@@ -57,8 +57,8 @@ export class RetrieveSalesforce {
     private fileSaver: IFileSaver,
   ) {}
 
-  async buildErrorMessage(
-    job: { query: string; label: string },
+async buildErrorMessage(
+    job: any,
     objName: string | null,
     dataType: string,
     err: any,
@@ -67,7 +67,7 @@ export class RetrieveSalesforce {
   ): Promise<string> {
     let errorMsg = `\n警告: ${job.label} の取得に失敗しました。`;
     if (dataType === "object" && objName) {
-      const columnNames = getColumnNamesFromQuery(job.query);
+      const columnNames = job.columns;
       const undefinedCols = objectRepository.getUndefinedColumns(
         objName,
         columnNames,
@@ -76,7 +76,7 @@ export class RetrieveSalesforce {
         errorMsg += `\n未定義のカラム: ${undefinedCols.join(", ")}`;
       }
     } else if (dataType === "metadata" && objName) {
-      const columnNames = getColumnNamesFromQuery(job.query);
+      const columnNames = job.columns;
       const undefinedCols = await sobjectRepository.getUndefinedColumns(
         objName,
         columnNames,
@@ -98,6 +98,8 @@ export class RetrieveSalesforce {
     }
 
     const { objectRepository, sobjectRepository } = baseData as { objectRepository: ObjectRepository; sobjectRepository: SobjectRepository };
+
+    await this.fetchMetadataFields(queryJobs, objectRepository, sobjectRepository);
 
     await this.runQueryJobs(queryJobs, objectRepository, sobjectRepository);
 
@@ -157,7 +159,32 @@ export class RetrieveSalesforce {
 
     for await (const job of queryJobs) {
       console.log(`${job.label} を取得中...`);
-      const objName = getObjectNameFromQuery(job.query);
+
+      const objName = job.objectName;
+      const columns = job.columns;
+      const queryOption = job.queryOption || "";
+
+      let columnList: string[];
+      if (columns.includes("*")) {
+        const fieldsData = objectRepository.fields?.data;
+        if (!fieldsData) {
+          throw new Error(
+            `エラー: fields.json がありません。--only-objects を先に実行してください。`,
+          );
+        }
+        const objFields = fieldsData.find((f: any) => f.objectName === objName);
+        if (!objFields) {
+          throw new Error(
+            `エラー: オブジェクト ${objName} の情報が fields.json に見つかりません。`,
+          );
+        }
+        columnList = objFields.fields.map((f: any) => f.QualifiedApiName);
+      } else {
+        columnList = columns;
+      }
+
+      const query = `SELECT ${columnList.join(", ")} FROM ${objName} ${queryOption}`;
+
       let dataType: string = "other";
       if (objName) {
         if (objectRepository.isObject(objName)) {
@@ -169,7 +196,7 @@ export class RetrieveSalesforce {
       try {
         const parsed = await sfClient.saveQueryJsonFile(
           job.fileName,
-          job.query,
+          query,
           job.tooling,
           dataType,
         );
@@ -190,6 +217,31 @@ export class RetrieveSalesforce {
         if (err.stdout) console.error("STDOUT:", err.stdout);
         else console.error("Error:", err.message);
       }
+    }
+  }
+
+  async fetchMetadataFields(
+    queryJobs: any[],
+    objectRepository: ObjectRepository,
+    sobjectRepository: SobjectRepository,
+  ) {
+    const sfClient = this.sfClient;
+    const metadataObjectNames: string[] = [];
+
+    for (const job of queryJobs) {
+      const objName = job.objectName;
+      if (objectRepository.isObject(objName)) {
+        continue;
+      }
+      if (sobjectRepository.isSobject(objName)) {
+        if (!metadataObjectNames.includes(objName)) {
+          metadataObjectNames.push(objName);
+        }
+      }
+    }
+
+    if (metadataObjectNames.length > 0) {
+      await sfClient.saveMetadataFieldsFile(metadataObjectNames);
     }
   }
 }

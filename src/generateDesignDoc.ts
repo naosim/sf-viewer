@@ -163,22 +163,56 @@ function main() {
   console.log("\n--- アドオンを実行します ---");
   runAddons(inputDir, outputDir, meta);
 
-  const tabs = fs
+  convertSobjectFieldsToTsv(inputDir, outputDir);
+
+  const tabs = getTabs(outputDir);
+  const result = runDesignDocAddons(inputDir, meta, tabs);
+
+  updateMetaWithTabs(metaPath, meta, result);
+
+  console.log("--- 処理2: 完了 ---");
+
+  generateStandaloneHtml(outputDir, inputMeta);
+}
+
+function convertSobjectFieldsToTsv(inputDir: string, outputDir: string): void {
+  const sobjectFieldsPath = path.join(inputDir, "sobjectFields.json");
+  if (!fs.existsSync(sobjectFieldsPath)) {
+    return;
+  }
+
+  console.log("sobjectFields.json を TSV に変換中...");
+  const sobjectFields = JSON.parse(fs.readFileSync(sobjectFieldsPath, "utf8"));
+  const rows: string[][] = [];
+
+  for (const obj of sobjectFields.data) {
+    for (const field of obj.fields) {
+      rows.push([obj.objectName, field.name, field.label, field.type]);
+    }
+  }
+
+  const tsvContent = FrontMatterTSV.stringify(
+    { label: "sObject項目一覧" },
+    ["objectName", "name", "label", "type"],
+    rows
+  );
+  fs.writeFileSync(path.join(outputDir, "sobjectFields.tsv"), tsvContent);
+  console.log(`sobjectFields.tsv を out_designDoc/sobjectFields.tsv に保存しました。（${rows.length} 件）`);
+}
+
+function getTabs(outputDir: string): string[] {
+  return fs
     .readdirSync(outputDir)
     .filter((f) => f.endsWith(".tsv") || f.endsWith(".md"))
     .sort();
+}
 
-  const result = runDesignDocAddons(inputDir, meta, tabs);
-
+function updateMetaWithTabs(metaPath: string, meta: any, result: { tabs?: string[]; title?: string }): void {
   meta.tabs = result.tabs;
   if (result.title) {
     meta.title = result.title;
   }
   fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2));
-
-  console.log("--- 処理2: 完了 ---");
-
-  generateStandaloneHtml(outputDir, inputMeta);
 }
 
 main();
