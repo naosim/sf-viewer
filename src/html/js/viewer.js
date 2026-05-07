@@ -109,13 +109,21 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
     }
   }
 
-  function switchTab(fileName, type) {
+  function switchTab(fileName, type, updateUrl = true) {
     console.log('switchTab called:', fileName, type);
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     const targetTab = document.querySelector('.tab[data-file="' + fileName + '"]');
     if (targetTab) {
       targetTab.classList.add('active');
     }
+
+    // URLを更新（ページリロードなし）
+    if (updateUrl) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('page', fileName);
+      window.history.pushState({}, '', url);
+    }
+
     if (type === 'tsv') {
       loadTable(fileName);
     } else {
@@ -124,9 +132,46 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
     }
   }
 
-  if (tabs.length > 0) {
-    const firstFile = tabs[0];
-    const firstData = dataMap[firstFile];
-    switchTab(firstFile, firstData.type);
+  // URLパラメータから page を取得（拡張子ありの完全ファイル名）
+  const urlParams = new URLSearchParams(window.location.search);
+  const pageParam = urlParams.get('page');
+
+  let targetFile = null;
+  let targetType = null;
+
+  if (pageParam && dataMap[pageParam]) {
+    // 完全一致（拡張子あり）のみ対応
+    targetFile = pageParam;
+    targetType = dataMap[pageParam].type;
+  } else {
+    // デフォルトは最初のタブ
+    if (tabs.length > 0) {
+      targetFile = tabs[0];
+      targetType = dataMap[targetFile]?.type;
+    }
   }
+
+  if (targetFile && targetType) {
+    // 初期化時はURLを更新しない（updateUrl = false）
+    switchTab(targetFile, targetType, false);
+
+    // URLが異なる場合のみreplaceStateで更新
+    const currentUrl = new URL(window.location.href);
+    const currentPage = currentUrl.searchParams.get('page');
+    if (currentPage !== targetFile) {
+      currentUrl.searchParams.set('page', targetFile);
+      window.history.replaceState({}, '', currentUrl);
+    }
+  }
+
+  // ブラウザの戻る/進むボタン対応
+  window.addEventListener('popstate', function(event) {
+    const params = new URLSearchParams(window.location.search);
+    const page = params.get('page');
+    if (page && dataMap[page]) {
+      switchTab(page, dataMap[page].type, false);
+    } else if (tabs.length > 0) {
+      switchTab(tabs[0], dataMap[tabs[0]].type, false);
+    }
+  });
 }
