@@ -3,7 +3,7 @@ import * as path from "path";
 import { FrontMatterTSV } from "./FrontMatterTSV";
 import { formatTimestamp } from "./sfUtil";
 import { generateStandaloneHtml } from "./generateStandaloneHtml";
-import { runAddons, runDesignDocAddons } from "./runAddons";
+import { runAddons, runDesignDocAddons, runFilterAddons } from "./runAddons";
 
 interface QueryJob {
   fileName: string;
@@ -164,6 +164,9 @@ function main() {
   runAddons(inputDir, outputDir, meta);
 
   convertSobjectFieldsToTsv(inputDir, outputDir);
+
+  console.log("\n--- フィルターアドオンを実行します ---");
+  runFilterAddons(outputDir);
 
   const tabs = getTabs(outputDir);
   const result = runDesignDocAddons(inputDir, meta, tabs);

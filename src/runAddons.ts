@@ -28,7 +28,7 @@ export function runAddons(inputDir: string, outputDir: string, meta: any): void 
     return;
   }
 
-  const addonFiles = fs.readdirSync(addonsDir).filter((f) => f.endsWith(".ts") && !f.startsWith("designDoc") && !f.startsWith("html"));
+  const addonFiles = fs.readdirSync(addonsDir).filter((f) => f.endsWith(".ts") && !f.startsWith("designDoc") && !f.startsWith("html") && !f.startsWith("filter"));
   if (addonFiles.length === 0) {
     console.log("アドオンファイルが存在しないため、スキップします。");
     return;
@@ -99,7 +99,7 @@ export function runDesignDocAddons(inputDir: string, meta: any, tabs: string[]):
     return { tabs };
   }
 
-  const designDocFiles = fs.readdirSync(addonsDir).filter((f) => f.startsWith("designDoc") && f.endsWith(".ts"));
+  const designDocFiles = fs.readdirSync(addonsDir).filter((f) => f.startsWith("designDoc") && f.endsWith(".ts") && !f.startsWith("filter"));
   if (designDocFiles.length === 0) {
     console.log("designDocアドオンが存在しないため、スキップします。");
     return { tabs };
@@ -152,13 +152,89 @@ export function runDesignDocAddons(inputDir: string, meta: any, tabs: string[]):
   return { tabs: currentTabs, title: currentTitle };
 }
 
+export function runFilterAddons(outputDir: string): void {
+  const addonsDir = path.join(__dirname, "../addons");
+  if (!fs.existsSync(addonsDir)) {
+    return;
+  }
+
+  const filterFiles = fs.readdirSync(addonsDir).filter((f) => f.startsWith("filter") && f.endsWith(".ts"));
+  if (filterFiles.length === 0) {
+    return;
+  }
+
+  const files = fs.readdirSync(outputDir).filter((f) => f.endsWith(".tsv") || f.endsWith(".md"));
+  if (files.length === 0) {
+    return;
+  }
+
+  const fileInfos: { fileName: string; label: string }[] = files.map((f) => {
+    const filePath = path.join(outputDir, f);
+    const content = fs.readFileSync(filePath, "utf8");
+    let label = "";
+    try {
+      if (f.endsWith(".tsv")) {
+        const parsed = FrontMatterTSV.parse(content);
+        label = parsed.meta.label || "";
+      } else if (f.endsWith(".md")) {
+        const match = content.match(/^---\n([\s\S]*?)\n---/);
+        if (match) {
+          const metaLines = match[1].split("\n");
+          for (const line of metaLines) {
+            const colonIndex = line.indexOf(":");
+            if (colonIndex > 0) {
+              const key = line.substring(0, colonIndex).trim();
+              const value = line.substring(colonIndex + 1).trim();
+              if (key === "label") {
+                label = value;
+                break;
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn(`警告: ${f} のラベル読み取りに失敗しました。`);
+    }
+    return { fileName: f, label };
+  });
+
+  for (const filterFile of filterFiles) {
+    try {
+      const addonName = filterFile.replace(".ts", "");
+      console.log(`フィルターアドオンを実行中: ${addonName}`);
+
+      const addonPath = path.join(addonsDir, filterFile);
+      const requireFn = createRequire(addonPath);
+      const addonModule: { run?: (file: { fileName: string; label: string }) => boolean } = requireFn(addonPath);
+      const runFunction = addonModule.run;
+
+      if (typeof runFunction !== "function") {
+        throw new Error("run 関数がエクスポートされていません。");
+      }
+
+      for (const fileInfo of fileInfos) {
+        const shouldKeep = runFunction(fileInfo);
+        if (shouldKeep === false) {
+          const filePath = path.join(outputDir, fileInfo.fileName);
+          fs.unlinkSync(filePath);
+          console.log(`${addonName}: ${fileInfo.fileName} を削除しました（フィルターにより生成除外）`);
+        }
+      }
+    } catch (error: any) {
+      console.error(`フィルターアドオン ${filterFile} の実行中にエラーが発生しました: ${error.message}`);
+      throw error;
+    }
+  }
+}
+
 export function runHtmlAddons(meta: any): HtmlCustomResult {
   const addonsDir = path.join(__dirname, "../addons");
   if (!fs.existsSync(addonsDir)) {
     return {};
   }
 
-  const htmlAddonFiles = fs.readdirSync(addonsDir).filter((f) => f.startsWith("html") && f.endsWith(".ts"));
+  const htmlAddonFiles = fs.readdirSync(addonsDir).filter((f) => f.startsWith("html") && f.endsWith(".ts") && !f.startsWith("filter"));
   if (htmlAddonFiles.length === 0) {
     return {};
   }
