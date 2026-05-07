@@ -158,6 +158,7 @@ export class SfClient implements IFileSaver {
   private outputDir: string;
   private retrievedAt: Date;
   private options?: any;
+  private baseUrl?: string;
   private runSf: (
     args: string[],
     options: SfOptions,
@@ -372,6 +373,9 @@ export class SfClient implements IFileSaver {
       },
       data: data,
     };
+    if (this.baseUrl !== undefined) {
+      dataToSave.meta.base_url = this.baseUrl;
+    }
     if (this.options !== undefined) {
       dataToSave.meta.options = this.options;
     }
@@ -405,6 +409,20 @@ export class SfClient implements IFileSaver {
         "エラー: sf コマンドが見つかりません。Salesforce CLIをインストールしてください。",
       );
     }
+  }
+
+  async getBaseUrl(): Promise<string> {
+    const result = await this.runSf(["org", "display"], { alias: this.alias, json: true });
+    const parsed = JSON.parse(result.stdout);
+    if (parsed.status !== 0) {
+      throw new Error(`sf org display の実行に失敗しました: ${JSON.stringify(parsed.warnings || parsed.message || 'Unknown error')}`);
+    }
+    const instanceUrl = parsed.result?.instanceUrl;
+    if (!instanceUrl) {
+      throw new Error(`エラー: sf org display の結果に instanceUrl が見つかりません。`);
+    }
+    this.baseUrl = instanceUrl;
+    return instanceUrl;
   }
 
   static sobjectListJsonFileName = "sobject-list.json";

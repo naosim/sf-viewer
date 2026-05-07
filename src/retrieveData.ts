@@ -78,9 +78,21 @@ async function main() {
     label: job.label,
     tooling: job.tooling,
   }));
+
+  // SfClientを生成
+  const sfClient = new SfClient(alias, outputDir, retrievedAt, options);
+
+  // 1. sfコマンドの有無を確認
+  await sfClient.checkSfInstalled();
+
+  // 2. base_urlを取得
+  const baseUrl = await sfClient.getBaseUrl();
+
+  // 3. meta.jsonを作成（base_urlを含める）
   const meta: any = {
     alias: alias,
     retrievedAt: retrievedAt.toLocaleString(),
+    base_url: baseUrl,
     queryJobs: queryJobs,
   };
   if (options !== undefined) {
@@ -88,9 +100,6 @@ async function main() {
   }
   fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2));
 
-  const sfClient = new SfClient(alias, outputDir, retrievedAt, options);
-  // 1. sfコマンドの有無を確認
-  await sfClient.checkSfInstalled();
   const retrieveSalesforce = new RetrieveSalesforce(
     sfClient,
     config,
