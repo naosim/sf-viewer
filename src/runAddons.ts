@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
-import * as ts from "typescript";
+import { createRequire } from "module";
 import { FrontMatterTSV } from "./FrontMatterTSV";
 
 interface AddonResult {
@@ -47,16 +47,9 @@ export function runAddons(inputDir: string, outputDir: string, meta: any): void 
       console.log(`実行中: ${addonName}`);
 
       const addonPath = path.join(addonsDir, addonFile);
-      const addonCode = fs.readFileSync(addonPath, "utf8");
-
-      const transpiled = ts.transpileModule(addonCode, {
-        compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
-      });
-
-      const module: { exports: { run?: (inputData: any) => AddonResult[] } } = { exports: {} };
-      const evalCode = new Function("module", "exports", transpiled.outputText);
-      evalCode(module, module.exports);
-      const runFunction = module.exports.run;
+      const requireFn = createRequire(addonPath);
+      const addonModule: { run?: (inputData: any) => AddonResult[] } = requireFn(addonPath);
+      const runFunction = addonModule.run;
 
       if (typeof runFunction !== "function") {
         throw new Error("run 関数がエクスポートされていません。");
@@ -128,16 +121,9 @@ export function runDesignDocAddons(inputDir: string, meta: any, tabs: string[]):
       console.log(`designDocアドオンを実行中: ${addonName}`);
 
       const addonPath = path.join(addonsDir, addonFile);
-      const addonCode = fs.readFileSync(addonPath, "utf8");
-
-      const transpiled = ts.transpileModule(addonCode, {
-        compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
-      });
-
-      const module: { exports: { run?: (inputData: any, tabs: string[], meta: any) => DesignDocResult } } = { exports: {} };
-      const evalCode = new Function("module", "exports", transpiled.outputText);
-      evalCode(module, module.exports);
-      const runFunction = module.exports.run;
+      const requireFn = createRequire(addonPath);
+      const addonModule: { run?: (inputData: any, tabs: string[], meta: any) => DesignDocResult } = requireFn(addonPath);
+      const runFunction = addonModule.run;
 
       if (typeof runFunction !== "function") {
         throw new Error("run 関数がエクスポートされていません。");
@@ -185,16 +171,9 @@ export function runHtmlAddons(meta: any): HtmlCustomResult {
       console.log(`HTMLアドオンを実行中: ${addonName}`);
 
       const addonPath = path.join(addonsDir, addonFile);
-      const addonCode = fs.readFileSync(addonPath, "utf8");
-
-      const transpiled = ts.transpileModule(addonCode, {
-        compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
-      });
-
-      const module: { exports: { run?: (meta: any) => HtmlCustomResult } } = { exports: {} };
-      const evalCode = new Function("module", "exports", transpiled.outputText);
-      evalCode(module, module.exports);
-      const runFunction = module.exports.run;
+      const requireFn = createRequire(addonPath);
+      const addonModule: { run?: (meta: any) => HtmlCustomResult } = requireFn(addonPath);
+      const runFunction = addonModule.run;
 
       if (typeof runFunction !== "function") {
         throw new Error("run 関数がエクスポートされていません。");
