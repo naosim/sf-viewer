@@ -3,6 +3,20 @@ import * as path from "path";
 import { SfClient, loadConfig, IFileSaver, formatTimestamp, normalizeToArray } from "./sfUtil";
 import { RetrieveSalesforce } from "./retrieveSalesforce";
 
+function loadEnvOptions(alias: string): any | undefined {
+  const envPath = path.join(__dirname, "../env.json");
+  if (!fs.existsSync(envPath)) {
+    throw new Error("エラー: env.json が見つかりません。");
+  }
+  const envData: Array<{ alias: string; isDefault?: boolean; options?: any }> =
+    JSON.parse(fs.readFileSync(envPath, "utf8"));
+  const envEntry = envData.find((e) => e.alias === alias);
+  if (!envEntry) {
+    throw new Error(`エラー: env.json に alias "${alias}" が存在しません。`);
+  }
+  return envEntry.options;
+}
+
 async function main() {
   console.log("--- 処理1: Salesforceからのデータ取得を開始します ---");
 
@@ -17,6 +31,8 @@ async function main() {
   const config = loadConfig(configPath);
 
   console.log(`対象エイリアス: ${alias}`);
+
+  const options = loadEnvOptions(alias);
 
   const outputDir = path.join(__dirname, "../output");
   if (!fs.existsSync(outputDir)) {
@@ -62,14 +78,17 @@ async function main() {
     label: job.label,
     tooling: job.tooling,
   }));
-  const meta = {
+  const meta: any = {
     alias: alias,
     retrievedAt: retrievedAt.toLocaleString(),
     queryJobs: queryJobs,
   };
+  if (options !== undefined) {
+    meta.options = options;
+  }
   fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2));
 
-  const sfClient = new SfClient(alias, outputDir, retrievedAt);
+  const sfClient = new SfClient(alias, outputDir, retrievedAt, options);
   // 1. sfコマンドの有無を確認
   await sfClient.checkSfInstalled();
   const retrieveSalesforce = new RetrieveSalesforce(

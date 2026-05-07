@@ -157,6 +157,7 @@ export class SfClient implements IFileSaver {
   private alias: string;
   private outputDir: string;
   private retrievedAt: Date;
+  private options?: any;
   private runSf: (
     args: string[],
     options: SfOptions,
@@ -166,11 +167,13 @@ export class SfClient implements IFileSaver {
     alias: string,
     outputDir: string,
     retrievedAt: Date,
+    options?: any,
     runSfFunc = _runSf,
   ) {
     this.alias = alias;
     this.outputDir = outputDir;
     this.retrievedAt = retrievedAt;
+    this.options = options;
     this.runSf = runSfFunc;
   }
 
@@ -369,6 +372,9 @@ export class SfClient implements IFileSaver {
       },
       data: data,
     };
+    if (this.options !== undefined) {
+      dataToSave.meta.options = this.options;
+    }
     if (dataType) {
       dataToSave.meta.dataType = dataType;
     }
