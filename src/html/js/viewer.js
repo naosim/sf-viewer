@@ -45,7 +45,7 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
 
     const headerHeight = document.querySelector("header").offsetHeight;
     const tabsHeight = document.querySelector(".tabs").offsetHeight;
-    const tableHeight = `calc(100vh - ${headerHeight + tabsHeight + 40}px)`;
+    const tableHeight = `calc(100vh - ${headerHeight + tabsHeight + 20}px)`;
 
     activeTable = new Tabulator("#table", {
       data: tableData,
