@@ -178,6 +178,18 @@ export class SfClient implements IFileSaver {
     this.runSf = runSfFunc;
   }
 
+  getAlias(): string {
+    return this.alias;
+  }
+
+  getBaseUrlSync(): string | undefined {
+    return this.baseUrl;
+  }
+
+  getOptions(): any | undefined {
+    return this.options;
+  }
+
   async sfQuery<T = any>(
     query: string,
     tooling: boolean = false,

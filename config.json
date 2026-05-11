@@ -235,7 +235,7 @@
         "LastModifiedDate"
       ],
       "tooling": false,
-      "label": "フロー一覧（レコードとして）",
+      "label": "FlowRecord",
       "queryOption": "LIMIT 200"
     },
     {
@@ -261,6 +261,24 @@
       "tooling": false,
       "label": "商品",
       "queryOption": "ORDER BY Name"
+    },
+    {
+      "fileName": "flowDefinitionView.json",
+      "objectName": "FlowDefinitionView",
+      "columns": [
+        "ApiName",
+        "ActiveVersionId",
+        "Description",
+        "DurableId",
+        "IsActive",
+        "Label",
+        "LatestVersionId",
+        "VersionNumber",
+        "ProcessType"
+      ],
+      "tooling": false,
+      "label": "フロー(FlowDefinitionView)",
+      "queryOption": "ORDER BY ApiName"
     }
   ]
 }

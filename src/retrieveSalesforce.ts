@@ -4,6 +4,8 @@ import {
   SobjectRepository,
   ObjectRepository,
 } from "./sfUtil";
+import * as path from "path";
+import * as fs from "fs";
 
 const normalizeToArray = <T>(value: T | T[] | undefined | null): T[] => {
   if (value === undefined || value === null) return [];
@@ -92,7 +94,7 @@ async buildErrorMessage(
     const config = this.config;
     const queryJobs = normalizeToArray(config.queryJobs);
 
-    const baseData = await this.fetchBaseData(onlyObjects);
+    const baseData = await this.fetchBaseData(onlyObjects, queryJobs);
     if (baseData.onlyObjects) {
       return { onlyObjects: true };
     }
@@ -107,16 +109,81 @@ async buildErrorMessage(
     return {};
   }
 
-  async fetchBaseData(onlyObjects?: boolean) {
+  async fetchBaseData(onlyObjects?: boolean, queryJobs?: any[]) {
     const sfClient = this.sfClient;
     const config = this.config;
 
     console.log("オブジェクト一覧を取得中...");
-    const objectsQuery = `SELECT QualifiedApiName, Label, DeveloperName FROM EntityDefinition WHERE IsCustomizable = true ORDER BY QualifiedApiName`;
-    const objectsData = await sfClient.saveQueryJsonFile(
-      "objects.json",
-      objectsQuery,
-    );
+
+    // queryJobs から objectName を抽出
+    const queryJobObjectNames = queryJobs
+      ? [...new Set(queryJobs.map((job: any) => job.objectName).filter((name: any) => name))]
+      : [];
+
+    // ベースクエリ（IsCustomizable = true）
+    const baseQuery = "SELECT QualifiedApiName, Label, DeveloperName FROM EntityDefinition WHERE IsCustomizable = true ORDER BY QualifiedApiName";
+    
+    let objectsData: any;
+    
+    if (queryJobObjectNames.length > 0) {
+      // 2つのクエリを実行してマージ
+      const quotedNames = queryJobObjectNames.map((name: string) => `'${name}'`).join(", ");
+      const extraQuery = `SELECT QualifiedApiName, Label, DeveloperName FROM EntityDefinition WHERE QualifiedApiName IN (${quotedNames})`;
+      
+      const [baseResult, extraResult] = await Promise.all([
+        sfClient.saveQueryJsonFile("objects_base.json", baseQuery),
+        sfClient.saveQueryJsonFile("objects_extra.json", extraQuery),
+      ]);
+      
+      // results をマージして重複を排除
+      const mergedRecords: any[] = [];
+      const seen = new Set<string>();
+      
+      for (const record of [...(baseResult.result?.records || []), ...(extraResult.result?.records || [])]) {
+        if (!seen.has(record.QualifiedApiName)) {
+          seen.add(record.QualifiedApiName);
+          mergedRecords.push(record);
+        }
+      }
+      
+      // マージ結果を保存（正しいデータ構造で保存）
+      objectsData = {
+        result: {
+          totalSize: mergedRecords.length,
+          records: mergedRecords,
+        },
+      };
+
+      // objects.json に保存（result.records 構造で保存）
+      const outputDir = path.join(__dirname, "../output");
+      const meta = {
+        retrievedAt: new Date().toLocaleString(),
+        alias: sfClient.getAlias(),
+        base_url: sfClient.getBaseUrlSync(),
+        options: sfClient.getOptions(),
+      };
+      const objectsToSave = {
+        meta: meta,
+        data: {
+          result: {
+            records: mergedRecords,
+          },
+        },
+      };
+      fs.writeFileSync(
+        path.join(outputDir, "objects.json"),
+        JSON.stringify(objectsToSave, null, 2)
+      );
+      
+      // 一時ファイルを削除
+      ["objects_base.json", "objects_extra.json"].forEach((f) => {
+        const fp = path.join(outputDir, f);
+        if (fs.existsSync(fp)) fs.unlinkSync(fp);
+      });
+    } else {
+      objectsData = await sfClient.saveQueryJsonFile("objects.json", baseQuery);
+    }
+
     console.log(
       `オブジェクト一覧を取得し、output/objects.json に保存しました。（計 ${objectsData.result.totalSize} 件）`,
     );
