@@ -108,7 +108,7 @@ npx ts-node src/index.ts dev1
 
 ### 6. スタンダアロンHTMLを開く
 
-`standaloneHtml/viewer.html` をブラウザで開いて確認します。
+`userData/standaloneHtml/viewer.html` をブラウザで開いて確認します。
 
 ---
 
@@ -116,7 +116,7 @@ npx ts-node src/index.ts dev1
 
 ### Google SpreadSheet へ反映
 
-1. `out_designDoc/` を Google Drive の指定フォルダにアップロード
+1. `userData/out_designDoc/` を Google Drive の指定フォルダにアップロード
 2. Google Apps Script のプロジェクトを開く（`gas/index.gs` と `gas/config.gs` を貼り付け）
 3. `gas/config.gs` の設定（DRIVE_FOLDER_ID, SPREADSHEET_ID）を編集
 4. `run()` 関数を実行（設定値が未編集の場合はエラーが表示されます）
@@ -125,24 +125,24 @@ npx ts-node src/index.ts dev1
 
 ## 出力ファイル
 
-すべての出力は `output/` ディレクトリに保存されます。
+すべての出力は `userData/output/` ディレクトリに保存されます。
 
-- `output/objects.json` - 取得したオブジェクト一覧
-- `output/fields.json` - 取得した項目一覧
-- `output/sobject-list.json` - 取得した sObject 一覧
-- `output/flowDefinitions.json` - 取得した FlowDefinition 一覧
-- `output/flows.json` - 取得した FlowRecord 一覧
-- `output/cronJobs.json` - 取得した CronTrigger 一覧
+- `userData/output/objects.json` - 取得したオブジェクト一覧
+- `userData/output/fields.json` - 取得した項目一覧
+- `userData/output/sobject-list.json` - 取得した sObject 一覧
+- `userData/output/flowDefinitions.json` - 取得した FlowDefinition 一覧
+- `userData/output/flows.json` - 取得した FlowRecord 一覧
+- `userData/output/cronJobs.json` - 取得した CronTrigger 一覧
 
 ## 基本設計書（TSV）
 
-基本設計書は `out_designDoc/` ディレクトリに保存されます。
+基本設計書は `userData/out_designDoc/` ディレクトリに保存されます。
 
-- `out_designDoc/fields.tsv` - 項目一覧
-- `out_designDoc/meta.json` - メタデータ（alias, retrievedAt, queryJobs）
-- `out_designDoc/flowDefinitions.tsv` - FlowDefinition 一覧
-- `out_designDoc/flows.tsv` - フロー一覧
-- `out_designDoc/cronJobs.tsv` - CronTrigger 一覧
+- `userData/out_designDoc/fields.tsv` - 項目一覧
+- `userData/out_designDoc/meta.json` - メタデータ（alias, retrievedAt, queryJobs）
+- `userData/out_designDoc/flowDefinitions.tsv` - FlowDefinition 一覧
+- `userData/out_designDoc/flows.tsv` - フロー一覧
+- `userData/out_designDoc/cronJobs.tsv` - CronTrigger 一覧
 
 ## 個別実行
 
@@ -151,7 +151,7 @@ npx ts-node src/index.ts dev1
 
 ## スタンダアロンHTML
 
-基本設計書生成時に `standaloneHtml/viewer.html` に全データを埋め込んだ単独のHTMLファイルを生成します。外部依存なし（CDNは使用）で、単独で開いて表示可能です。
+基本設計書生成時に `userData/standaloneHtml/viewer.html` に全データを埋め込んだ単独のHTMLファイルを生成します。外部依存なし（CDNは使用）で、単独で開いて表示可能です。
 
 ### HTMLテンプレート
 
@@ -181,13 +181,13 @@ src/html/
 ### URL パラメータによるタブ直接表示
 `viewer.html?page=filename.tsv` で対応するタブを直接表示できます。
 
-- 例: `standaloneHtml/viewer.html?page=flows.tsv` → flows.tsv タブを表示
+- 例: `userData/standaloneHtml/viewer.html?page=flows.tsv` → flows.tsv タブを表示
 - タブを切り替えると URL が `?page=ファイル名` に更新される（pushState）
 - ブラウザの戻る/進むボタンでタブ履歴を辿れる（popstate イベント対応）
 
 ## アドオン
 
-`addons/` ディレクトリに TypeScript ファイルを配置すると、基本設計書生成時に自動的に実行されます。
+`userData/addons/` ディレクトリに TypeScript ファイルを配置すると、基本設計書生成時に自動的に実行されます。
 
 ### アドオン内での import 対応
 アドオン内で `import` 文を使用できます（例: `import { hoge } from "./libs/util"`）。
@@ -254,7 +254,7 @@ export function run(meta: any): {
 
 ### 出力先
 
-- 標準アドオン: `out_designDoc/`
+- 標準アドオン: `userData/out_designDoc/`
 - エラー発生時は処理が中止されます
 
 ## テストの実行方法

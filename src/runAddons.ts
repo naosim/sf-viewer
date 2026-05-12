@@ -2,6 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { createRequire } from "module";
 import { FrontMatterTSV } from "./FrontMatterTSV";
+import { resolveUserDataSubDir } from "./pathUtil";
 
 interface AddonResult {
   meta: { [key: string]: string };
@@ -22,7 +23,7 @@ interface HtmlCustomResult {
 }
 
 export function runAddons(inputDir: string, outputDir: string, meta: any): void {
-  const addonsDir = path.join(__dirname, "../addons");
+  const addonsDir = resolveUserDataSubDir("addons");
   if (!fs.existsSync(addonsDir)) {
     console.log("addons/ ディレクトリが存在しないため、スキップします。");
     return;
@@ -93,7 +94,7 @@ export function runAddons(inputDir: string, outputDir: string, meta: any): void 
 }
 
 export function runDesignDocAddons(inputDir: string, meta: any, tabs: string[]): DesignDocResult {
-  const addonsDir = path.join(__dirname, "../addons");
+  const addonsDir = resolveUserDataSubDir("addons");
   if (!fs.existsSync(addonsDir)) {
     console.log("addons/ ディレクトリが存在しないため、スキップします。");
     return { tabs };
@@ -153,7 +154,7 @@ export function runDesignDocAddons(inputDir: string, meta: any, tabs: string[]):
 }
 
 export function runFilterAddons(outputDir: string): void {
-  const addonsDir = path.join(__dirname, "../addons");
+  const addonsDir = resolveUserDataSubDir("addons");
   if (!fs.existsSync(addonsDir)) {
     return;
   }
@@ -229,7 +230,7 @@ export function runFilterAddons(outputDir: string): void {
 }
 
 export function runHtmlAddons(meta: any): HtmlCustomResult {
-  const addonsDir = path.join(__dirname, "../addons");
+  const addonsDir = resolveUserDataSubDir("addons");
   if (!fs.existsSync(addonsDir)) {
     return {};
   }

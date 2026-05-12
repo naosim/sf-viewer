@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { FrontMatterTSV } from "./FrontMatterTSV";
+import { resolveUserDataSubDir } from "./pathUtil";
 import { runHtmlAddons } from "./runAddons";
 
 interface TsvData {
@@ -13,7 +14,7 @@ interface TsvData {
 export function generateStandaloneHtml(outputDir: string, meta: any) {
   console.log("\n--- スタンダアロンHTMLを生成します ---");
 
-  const standaloneDir = path.join(__dirname, "../standaloneHtml");
+  const standaloneDir = resolveUserDataSubDir("standaloneHtml");
   if (!fs.existsSync(standaloneDir)) {
     fs.mkdirSync(standaloneDir, { recursive: true });
   }

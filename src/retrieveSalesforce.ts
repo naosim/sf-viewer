@@ -4,6 +4,7 @@ import {
   SobjectRepository,
   ObjectRepository,
 } from "./sfUtil";
+import { resolveUserDataSubDir } from "./pathUtil";
 import * as path from "path";
 import * as fs from "fs";
 
@@ -155,7 +156,7 @@ async buildErrorMessage(
       };
 
       // objects.json に保存（result.records 構造で保存）
-      const outputDir = path.join(__dirname, "../output");
+      const outputDir = resolveUserDataSubDir("output");
       const meta = {
         retrievedAt: new Date().toLocaleString(),
         alias: sfClient.getAlias(),

@@ -2,6 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { FrontMatterTSV } from "./FrontMatterTSV";
 import { formatTimestamp } from "./sfUtil";
+import { resolveUserDataSubDir } from "./pathUtil";
 import { generateStandaloneHtml } from "./generateStandaloneHtml";
 import { runAddons, runDesignDocAddons, runFilterAddons } from "./runAddons";
 
@@ -49,8 +50,8 @@ function convertJsonToTsv(
 function main() {
   console.log("--- 処理2: 基本設計書を生成します ---");
 
-  const inputDir = path.join(__dirname, "../output");
-  const outputDir = path.join(__dirname, "../out_designDoc");
+  const inputDir = resolveUserDataSubDir("output");
+  const outputDir = resolveUserDataSubDir("out_designDoc");
 
   if (!fs.existsSync(inputDir)) {
     throw new Error(

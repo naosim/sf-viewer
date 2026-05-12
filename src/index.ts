@@ -1,24 +1,31 @@
 import { spawn } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
+import { resolveUserDataDir } from "./pathUtil";
 
 interface EnvEntry {
   alias: string;
   isDefault?: boolean;
 }
 
-function getAliasFromArgs(args: string[]): { alias: string | null; onlyObjects: boolean } {
+function parseArgs(args: string[]): { alias: string | null; onlyObjects: boolean; userDataDir: string | null } {
   const onlyObjects = args.includes("--only-objects");
-  const aliasArgs = args.filter((arg) => arg !== "--" && arg !== "--only-objects");
+  const userDataDirIndex = args.indexOf("--user-data-dir");
+  const userDataDir = userDataDirIndex >= 0 && userDataDirIndex < args.length - 1
+    ? args[userDataDirIndex + 1]
+    : null;
+  const aliasArgs = args.filter((arg) =>
+    arg !== "--" && arg !== "--only-objects" && arg !== "--user-data-dir"
+  );
   const aliasIndex = aliasArgs.findIndex((arg) => !arg.startsWith("-"));
   const alias = aliasIndex >= 0 && aliasIndex < aliasArgs.length ? aliasArgs[aliasIndex] : null;
-  return { alias, onlyObjects };
+  return { alias, onlyObjects, userDataDir };
 }
 
-function loadEnvAlias(requestedAlias: string | null): string {
-  const envPath = path.join(__dirname, "../env.json");
+function loadEnvAlias(requestedAlias: string | null, userDataDir: string): string {
+  const envPath = path.join(userDataDir, "env.json");
   if (!fs.existsSync(envPath)) {
-    throw new Error("エラー: env.json が見つかりません。");
+    throw new Error(`エラー: env.json が見つかりません。パス: ${envPath}`);
   }
 
   const envData: EnvEntry[] = JSON.parse(fs.readFileSync(envPath, "utf8"));
@@ -42,6 +49,7 @@ const runScript = (
   scriptPath: string,
   alias: string,
   onlyObjects: boolean,
+  userDataDir: string,
 ): Promise<boolean> => {
   return new Promise((resolve, reject) => {
     const child = spawn("npx", ["ts-node", scriptPath], {
@@ -51,6 +59,7 @@ const runScript = (
         ...process.env,
         SF_ALIAS: alias,
         SF_ONLY_OBJECTS: onlyObjects ? "true" : "false",
+        SF_USER_DATA_DIR: userDataDir,
       },
     });
 
@@ -69,17 +78,24 @@ const runScript = (
 };
 
 async function main() {
-  const { alias: requestedAlias, onlyObjects } = getAliasFromArgs(
+  const { alias: requestedAlias, onlyObjects, userDataDir: rawUserDataDir } = parseArgs(
     process.argv.slice(2),
   );
-  const alias = loadEnvAlias(requestedAlias);
+  const userDataDir = resolveUserDataDir(rawUserDataDir);
+  const alias = loadEnvAlias(requestedAlias, userDataDir);
 
   console.log("=== Salesforce データ取得と基本設計書生成 ===\n");
-  console.log(`対象エイリアス: ${alias}${onlyObjects ? " (--only-objects)" : ""}\n`);
+  console.log(`対象エイリアス: ${alias}${onlyObjects ? " (--only-objects)" : ""}`);
+  console.log(`データディレクトリ: ${userDataDir}\n`);
+
+  if (!fs.existsSync(userDataDir)) {
+    fs.mkdirSync(userDataDir, { recursive: true });
+    console.log(`データディレクトリを作成しました: ${userDataDir}\n`);
+  }
 
   try {
     console.log("--- 処理1: Salesforceからデータを取得します ---");
-    const isOnlyObjects = await runScript("src/retrieveData.ts", alias, onlyObjects);
+    const isOnlyObjects = await runScript("src/retrieveData.ts", alias, onlyObjects, userDataDir);
 
     if (isOnlyObjects) {
       console.log("\n--only-objects オプションのため処理を終了します。");
@@ -87,7 +103,7 @@ async function main() {
     }
 
     console.log("\n--- 処理2: 基本設計書を生成します ---");
-    await runScript("src/generateDesignDoc.ts", alias, false);
+    await runScript("src/generateDesignDoc.ts", alias, false, userDataDir);
 
     console.log("\n=== 全ての処理が完了しました ===");
   } catch (error: any) {

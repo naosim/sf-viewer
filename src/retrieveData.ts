@@ -1,12 +1,13 @@
 import * as fs from "fs";
 import * as path from "path";
 import { SfClient, loadConfig, IFileSaver, formatTimestamp, normalizeToArray } from "./sfUtil";
+import { resolveUserDataDir, resolveUserDataSubDir } from "./pathUtil";
 import { RetrieveSalesforce } from "./retrieveSalesforce";
 
-function loadEnvOptions(alias: string): any | undefined {
-  const envPath = path.join(__dirname, "../env.json");
+function loadEnvOptions(alias: string, userDataDir: string): any | undefined {
+  const envPath = path.join(userDataDir, "env.json");
   if (!fs.existsSync(envPath)) {
-    throw new Error("エラー: env.json が見つかりません。");
+    throw new Error(`エラー: env.json が見つかりません。パス: ${envPath}`);
   }
   const envData: Array<{ alias: string; isDefault?: boolean; options?: any }> =
     JSON.parse(fs.readFileSync(envPath, "utf8"));
@@ -26,15 +27,16 @@ async function main() {
     throw new Error("エラー: SF_ALIAS 環境変数が設定されていません。");
   }
 
-  // config.jsonの読み込み（alias以外）
-  const configPath = path.join(__dirname, "../config.json");
+  const userDataDir = resolveUserDataDir();
+  const configPath = path.join(userDataDir, "config.json");
   const config = loadConfig(configPath);
 
   console.log(`対象エイリアス: ${alias}`);
+  console.log(`データディレクトリ: ${userDataDir}`);
 
-  const options = loadEnvOptions(alias);
+  const options = loadEnvOptions(alias, userDataDir);
 
-  const outputDir = path.join(__dirname, "../output");
+  const outputDir = resolveUserDataSubDir("output");
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
   }
@@ -79,16 +81,12 @@ async function main() {
     tooling: job.tooling,
   }));
 
-  // SfClientを生成
   const sfClient = new SfClient(alias, outputDir, retrievedAt, options);
 
-  // 1. sfコマンドの有無を確認
   await sfClient.checkSfInstalled();
 
-  // 2. base_urlを取得
   const baseUrl = await sfClient.getBaseUrl();
 
-  // 3. meta.jsonを作成（base_urlを含める）
   const meta: any = {
     alias: alias,
     retrievedAt: retrievedAt.toLocaleString(),
