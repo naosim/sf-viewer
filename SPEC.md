@@ -32,12 +32,22 @@ sf-viewer/
 ### データディレクトリの指定
 `--user-data-dir` オプションでデータディレクトリのパスを指定できます。指定しない場合は `./userData`（プロジェクトルートからの相対パス）が使用されます。
 
+#### 引数の順序
+
+**重要**: `--user-data-dir` は alias の前または後のどちらにも配置できますが、**alias を先に指定することを推奨**します。
+
 ```
+# 推奨: alias を先に指定
+npx ts-node src/index.ts dev --user-data-dir ./myData
+
+# または --user-data-dir を先に指定
+npx ts-node src/index.ts --user-data-dir ./myData dev
+
+# 基本設計書のみ再生成
+npx ts-node src/generateDesignDoc.ts dev --user-data-dir ./myData
+
 # デフォルトのデータディレクトリを使用
 npx ts-node src/index.ts dev
-
-# カスタムディレクトリを指定
-npx ts-node src/index.ts --user-data-dir ../path/to/data dev
 ```
 
 ## 処理ステップ
@@ -114,8 +124,10 @@ npx ts-node src/index.ts dev1
 ```
 
 ### 個別実行
-- 処理1のみ: `SF_ALIAS=dev npx ts-node src/retrieveData.ts`
-- 処理2のみ: `npx ts-node src/generateDesignDoc.ts`（TSVとスタンダアロンHTMLを両方生成）
+- 処理1のみ（データ取得）: `npx ts-node src/retrieveData.ts dev --user-data-dir ./myData`
+- 処理2のみ（基本設計書生成）: `npx ts-node src/generateDesignDoc.ts dev --user-data-dir ./myData`（TSVとスタンダアロンHTMLを両方生成）
+
+> **注意**: retrieveData.ts と generateDesignDoc.ts は連携しており、retrieveData.ts で生成した output/*.json を generateDesignDoc.ts で読み込みます。個別に実行する場合も、同じ `--user-data-dir` を指定してください。
 
 ### スタンダアロンHTML
 - 処理2の実行時に `userData/out_designDoc/` の全TSVデータをHTML内に埋め込んで、単独で開けるHTMLファイルを生成

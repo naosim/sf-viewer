@@ -106,6 +106,50 @@ npx ts-node src/index.ts
 npx ts-node src/index.ts dev1
 ```
 
+### コマンドライン引数
+
+#### 引数の順序
+
+**重要**: `--user-data-dir` は **alias の前** または **後** のどちら에도配置できますが、**alias を先に指定することを推奨**します。
+
+```bash
+# 推奨: alias を先に指定
+npx ts-node src/index.ts dev --user-data-dir ./myData
+
+# または --user-data-dir を先に指定
+npx ts-node src/index.ts --user-data-dir ./myData dev
+```
+
+#### オプション
+
+| オプション | 説明 | 例 |
+|-----------|------|-----|
+| `alias` | Salesforce組織のエイリアス（env.jsonで定義） | `dev`, `dev1` |
+| `--user-data-dir` | データディレクトリのパス（デフォルト: `./userData`） | `./myData`, `/path/to/data` |
+| `--only-objects` | オブジェクト一覧のみ取得（blacklist確認用） | フラグのみ |
+
+#### 使用例
+
+```bash
+# デフォルト設定で実行（userDataディレクトリ、env.jsonのisDefaultを使用）
+npx ts-node src/index.ts
+
+# alias を明示的に指定
+npx ts-node src/index.ts dev
+
+# カスタムデータディレクトリを指定（alias は env.json の isDefault を使用）
+npx ts-node src/index.ts --user-data-dir ./myData
+
+# alias とデータディレクトリを両方指定（推奨）
+npx ts-node src/index.ts dev --user-data-dir ./myData
+
+# 基本設計書のみ再生成（データ取得スキップ）
+npx ts-node src/generateDesignDoc.ts dev --user-data-dir ./myData
+
+# オブジェクト一覧のみ取得（blacklist確認用）
+npx ts-node src/index.ts dev --only-objects
+```
+
 ### 6. スタンダアロンHTMLを開く
 
 `userData/standaloneHtml/viewer.html` をブラウザで開いて確認します。
@@ -146,8 +190,10 @@ npx ts-node src/index.ts dev1
 
 ## 個別実行
 
-- データ取得のみ: `SF_ALIAS=dev npx ts-node src/retrieveData.ts`
-- 基本設計書生成のみ: `npx ts-node src/generateDesignDoc.ts`（TSVとスタンダアロンHTMLを両方生成）
+- データ取得のみ: `npx ts-node src/retrieveData.ts dev --user-data-dir ./myData`
+- 基本設計書生成のみ: `npx ts-node src/generateDesignDoc.ts dev --user-data-dir ./myData`（TSVとスタンダアロンHTMLを両方生成）
+
+> **注意**: retrieveData.ts と generateDesignDoc.ts は連携しており、retrieveData.ts で生成した output/*.json を generateDesignDoc.ts で読み込みます。個別に実行する場合も、同じ `--user-data-dir` を指定してください。
 
 ## スタンダアロンHTML
 
