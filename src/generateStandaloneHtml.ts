@@ -3,6 +3,7 @@ import * as path from "path";
 import { FrontMatterTSV } from "./FrontMatterTSV";
 import { resolveUserDataSubDir } from "./pathUtil";
 import { runHtmlAddons } from "./runAddons";
+import { formatTimestamp } from "./sfUtil";
 
 interface TsvData {
   name: string;
@@ -17,6 +18,41 @@ export function generateStandaloneHtml(outputDir: string, meta: any) {
   const standaloneDir = resolveUserDataSubDir("standaloneHtml");
   if (!fs.existsSync(standaloneDir)) {
     fs.mkdirSync(standaloneDir, { recursive: true });
+  }
+
+  // バックアップ機能追加（out_designDoc/meta.json から取得）
+  const outputMetaPath = path.join(outputDir, "meta.json");
+  let prevRetrievedAt: Date | null = null;
+  let prevAlias: string = "unknown";
+
+  if (fs.existsSync(outputMetaPath)) {
+    const prevMeta = JSON.parse(fs.readFileSync(outputMetaPath, "utf8"));
+    prevRetrievedAt = new Date(prevMeta.retrievedAt);
+    prevAlias = prevMeta.alias || "unknown";
+  }
+
+  if (prevRetrievedAt) {
+    const backupDir = path.join(standaloneDir, "backup");
+    if (!fs.existsSync(backupDir)) {
+      fs.mkdirSync(backupDir, { recursive: true });
+    }
+    const filesInStandalone = fs
+      .readdirSync(standaloneDir)
+      .filter((f) => f !== "backup");
+    if (filesInStandalone.length > 0) {
+      const timestamp = formatTimestamp(prevRetrievedAt);
+      const backupPath = path.join(backupDir, `${timestamp}_${prevAlias}`);
+      fs.mkdirSync(backupPath, { recursive: true });
+      for (const file of filesInStandalone) {
+        const src = path.join(standaloneDir, file);
+        const dest = path.join(backupPath, file);
+        fs.copyFileSync(src, dest);
+        fs.unlinkSync(src);
+      }
+      console.log(
+        `standaloneHtml配下のファイルを backup/${timestamp}_${prevAlias} に退避しました。`,
+      );
+    }
   }
 
   const tsvFiles = fs.readdirSync(outputDir).filter((f) => f.endsWith(".tsv"));
@@ -67,7 +103,6 @@ export function generateStandaloneHtml(outputDir: string, meta: any) {
   const mdDataJson = JSON.stringify(mdDataList);
   const metaJson = JSON.stringify(meta);
 
-  const outputMetaPath = path.join(outputDir, "meta.json");
   const outputMeta = JSON.parse(fs.readFileSync(outputMetaPath, "utf8"));
   const tabsJson = JSON.stringify(outputMeta.tabs || []);
   const pageTitle = outputMeta.title || "SF Viewer - 基本設計書";
