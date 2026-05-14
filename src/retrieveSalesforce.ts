@@ -236,15 +236,25 @@ async buildErrorMessage(
       if (columns.includes("*")) {
         const fieldsData = objectRepository.fields?.data;
         if (!fieldsData) {
-          throw new Error(
-            `エラー: fields.json がありません。--only-objects を先に実行してください。`,
-          );
+          console.warn(`警告: fields.json がありません。${job.label} の取得をスキップします。`);
+          continue;
         }
-        const objFields = fieldsData.find((f: any) => f.objectName === objName);
+        
+        // fields.json から探検
+        let objFields = fieldsData.find((f: any) => f.objectName === objName);
+        
         if (!objFields) {
-          throw new Error(
-            `エラー: オブジェクト ${objName} の情報が fields.json に見つかりません。`,
-          );
+          // sObject としても存在するか確認
+          const isSobject = sobjectRepository.isSobject(objName);
+          
+          if (isSobject) {
+            // sObject としては存在するが FieldDefinition には 없는
+            console.warn(`警告: ${objName} は sObject ですが、FieldDefinition には存在しません。${job.label} の取得をスキップします。`);
+          } else {
+            // どちらにも存在しない
+            console.warn(`警告: オブジェクト ${objName} は fields.json と sobject-list.json のどちらにも見つかりません。${job.label} の取得をスキップします。`);
+          }
+          continue;
         }
         columnList = objFields.fields.map((f: any) => f.QualifiedApiName);
       } else {
@@ -273,6 +283,27 @@ async buildErrorMessage(
           `${job.label} を取得し、output/${job.fileName} に保存しました。（計 ${totalSize} 件）`,
         );
       } catch (err: any) {
+        // エラー情報を meta に含めて JSON を保存
+        const outputDir = resolveUserDataSubDir("output");
+        const errorData = {
+          meta: {
+            retrievedAt: new Date().toLocaleString(),
+            alias: sfClient.getAlias(),
+            base_url: sfClient.getBaseUrlSync() || "",
+            error: err.message || "不明なエラー",
+            errorCode: err.errorCode || null,
+            objectName: objName,
+            query: query,
+          },
+          data: null,
+        };
+        
+        const outputPath = path.join(outputDir, job.fileName);
+        fs.writeFileSync(outputPath, JSON.stringify(errorData, null, 2));
+        
+        console.warn(`警告: ${job.label} の取得に失敗しました。エラー情報を ${job.fileName} に保存しました。`);
+        
+        // エラー詳細をコンソールに出力
         const errorMsg = await this.buildErrorMessage(
           job,
           objName,
@@ -281,9 +312,9 @@ async buildErrorMessage(
           objectRepository,
           sobjectRepository,
         );
-        console.error(errorMsg);
-        if (err.stdout) console.error("STDOUT:", err.stdout);
-        else console.error("Error:", err.message);
+        console.warn(errorMsg);
+        if (err.stdout) console.warn("STDOUT:", err.stdout);
+        else console.warn("Error:", err.message);
       }
     }
   }
