@@ -2,9 +2,22 @@ import * as fs from "fs";
 import * as path from "path";
 import { FrontMatterTSV } from "./FrontMatterTSV";
 import { formatTimestamp } from "./sfUtil";
-import { resolveUserDataSubDir } from "./pathUtil";
+import { resolveUserDataDir, resolveUserDataSubDir } from "./pathUtil";
 import { generateStandaloneHtml } from "./generateStandaloneHtml";
 import { runAddons, runDesignDocAddons, runFilterAddons, runHtmlAddons } from "./runAddons";
+
+function parseArgs(args: string[]): { alias: string | null; userDataDir: string | null } {
+  const userDataDirIndex = args.indexOf("--user-data-dir");
+  const userDataDir = userDataDirIndex >= 0 && userDataDirIndex < args.length - 1
+    ? args[userDataDirIndex + 1]
+    : null;
+  const aliasArgs = args.filter((arg) =>
+    arg !== "--" && arg !== "--user-data-dir"
+  );
+  const aliasIndex = aliasArgs.findIndex((arg) => !arg.startsWith("-"));
+  const alias = aliasIndex >= 0 && aliasIndex < aliasArgs.length ? aliasArgs[aliasIndex] : null;
+  return { alias, userDataDir };
+}
 
 interface QueryJob {
   fileName: string;
@@ -56,6 +69,13 @@ function convertJsonToTsv(
 }
 
 function main() {
+  const args = process.argv.slice(2);
+  const { alias: cliAlias, userDataDir: cliUserDataDir } = parseArgs(args);
+
+  if (cliUserDataDir) {
+    process.env.SF_USER_DATA_DIR = cliUserDataDir;
+  }
+
   console.log("--- 処理2: 基本設計書を生成します ---");
 
   const inputDir = resolveUserDataSubDir("output");
@@ -119,7 +139,7 @@ function main() {
     queryJobs?: typeof inputMeta.queryJobs;
     tabs?: string[];
   } = {
-    alias: inputMeta.alias,
+    alias: cliAlias || inputMeta.alias,
     retrievedAt: retrievedAt.toLocaleString(),
     title: inputMeta.title || "SF Viewer - 基本設計書",
   };
