@@ -4,12 +4,20 @@ import { FrontMatterTSV } from "./FrontMatterTSV";
 import { formatTimestamp } from "./sfUtil";
 import { resolveUserDataSubDir } from "./pathUtil";
 import { generateStandaloneHtml } from "./generateStandaloneHtml";
-import { runAddons, runDesignDocAddons, runFilterAddons } from "./runAddons";
+import { runAddons, runDesignDocAddons, runFilterAddons, runHtmlAddons } from "./runAddons";
 
 interface QueryJob {
   fileName: string;
   label: string;
   tooling?: boolean;
+}
+
+interface AddonError {
+  addonName: string;
+  error: string;
+  errorCode?: string | null;
+  objectName?: string | null;
+  timestamp: string;
 }
 
 function convertJsonToTsv(
@@ -161,22 +169,46 @@ function main() {
     );
   }
 
+  // output/*.json からエラー情報を収集
+  const outputErrors: AddonError[] = [];
+  const outputFiles = fs.readdirSync(inputDir).filter(f => f.endsWith(".json") && f !== "meta.json");
+  for (const file of outputFiles) {
+    const filePath = path.join(inputDir, file);
+    const jsonData = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    if (jsonData.meta?.error) {
+      outputErrors.push({
+        addonName: file.replace(".json", ""),
+        error: jsonData.meta.error,
+        errorCode: jsonData.meta.errorCode || null,
+        objectName: jsonData.meta.objectName || null,
+        timestamp: jsonData.meta.retrievedAt || "",
+      });
+    }
+  }
+
   console.log("\n--- アドオンを実行します ---");
-  runAddons(inputDir, outputDir, meta);
+  const { errors: addonErrors } = runAddons(inputDir, outputDir, meta);
+  const addonErrorsList = [...addonErrors];
 
   convertSobjectFieldsToTsv(inputDir, outputDir);
 
   console.log("\n--- フィルターアドオンを実行します ---");
-  runFilterAddons(outputDir);
+  const filterErrors = runFilterAddons(outputDir);
+  addonErrorsList.push(...filterErrors);
 
   const tabs = getTabs(outputDir);
-  const result = runDesignDocAddons(inputDir, meta, tabs);
+  const { result: designDocResult, errors: designDocErrors } = runDesignDocAddons(inputDir, meta, tabs);
+  addonErrorsList.push(...designDocErrors);
 
-  updateMetaWithTabs(metaPath, meta, result);
+  const { errors: htmlErrors } = runHtmlAddons(inputMeta);
+  addonErrorsList.push(...htmlErrors);
+
+  const allErrors = [...outputErrors, ...addonErrorsList];
+  updateMetaWithTabs(metaPath, meta, designDocResult, allErrors);
 
   console.log("--- 処理2: 完了 ---");
 
-  generateStandaloneHtml(outputDir, inputMeta);
+  generateStandaloneHtml(outputDir, inputMeta, allErrors);
 }
 
 function convertSobjectFieldsToTsv(inputDir: string, outputDir: string): void {
@@ -211,10 +243,13 @@ function getTabs(outputDir: string): string[] {
     .sort();
 }
 
-function updateMetaWithTabs(metaPath: string, meta: any, result: { tabs?: string[]; title?: string }): void {
+function updateMetaWithTabs(metaPath: string, meta: any, result: { tabs?: string[]; title?: string }, errors: AddonError[]): void {
   meta.tabs = result.tabs;
   if (result.title) {
     meta.title = result.title;
+  }
+  if (errors.length > 0) {
+    meta.addonErrors = errors;
   }
   fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2));
 }

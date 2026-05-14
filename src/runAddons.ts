@@ -12,6 +12,15 @@ interface AddonResult {
   content?: string;
 }
 
+interface AddonError {
+  addonName: string;
+  error: string;
+  errorCode?: string | null;
+  objectName?: string | null;
+  timestamp: string;
+  errorStack?: string;
+}
+
 interface DesignDocResult {
   tabs?: string[];
   title?: string;
@@ -22,17 +31,20 @@ interface HtmlCustomResult {
   js?: string;
 }
 
-export function runAddons(inputDir: string, outputDir: string, meta: any): void {
+export function runAddons(inputDir: string, outputDir: string, meta: any): { results: AddonResult[], errors: AddonError[] } {
+  const errors: AddonError[] = [];
+  const results: AddonResult[] = [];
+  
   const addonsDir = resolveUserDataSubDir("addons");
   if (!fs.existsSync(addonsDir)) {
     console.log("addons/ ディレクトリが存在しないため、スキップします。");
-    return;
+    return { results, errors };
   }
 
   const addonFiles = fs.readdirSync(addonsDir).filter((f) => f.endsWith(".ts") && !f.startsWith("designDoc") && !f.startsWith("html") && !f.startsWith("filter"));
   if (addonFiles.length === 0) {
     console.log("アドオンファイルが存在しないため、スキップします。");
-    return;
+    return { results, errors };
   }
 
   const inputData: { [filename: string]: any } = {};
@@ -56,14 +68,15 @@ export function runAddons(inputDir: string, outputDir: string, meta: any): void 
         throw new Error("run 関数がエクスポートされていません。");
       }
 
-      const results: AddonResult[] = runFunction(inputData);
+      const addonResults: AddonResult[] = runFunction(inputData);
 
-      if (!Array.isArray(results)) {
+      if (!Array.isArray(addonResults)) {
         throw new Error("run 関数は配列を返す必要があります。");
       }
 
-      for (let i = 0; i < results.length; i++) {
-        const result = results[i];
+      for (let i = 0; i < addonResults.length; i++) {
+        const result = addonResults[i];
+        results.push(result);
         const isMarkdown = result.type === 'markdown';
         const ext = isMarkdown ? '.md' : '.tsv';
         const fileName = `${addonName}_${i}${ext}`;
@@ -71,7 +84,6 @@ export function runAddons(inputDir: string, outputDir: string, meta: any): void 
 
         let content: string;
         if (isMarkdown && result.content) {
-          // Markdown にも FrontMatter を追加
           const metaLines = Object.entries(result.meta).map(
             ([key, value]) => `${key}: ${value}`
           );
@@ -87,23 +99,32 @@ export function runAddons(inputDir: string, outputDir: string, meta: any): void 
         console.log(`${fileName} を out_designDoc/${fileName} に保存しました。`);
       }
     } catch (error: any) {
-      console.error(`アドオン ${addonFile} の実行中にエラーが発生しました: ${error.message}`);
-      throw error;
+      errors.push({
+        addonName: addonFile,
+        error: error.message,
+        errorStack: error.stack,
+        timestamp: new Date().toLocaleString(),
+      });
+      console.warn(`警告: アドオン ${addonFile} でエラーが発生しました。`);
     }
   }
+  
+  return { results, errors };
 }
 
-export function runDesignDocAddons(inputDir: string, meta: any, tabs: string[]): DesignDocResult {
+export function runDesignDocAddons(inputDir: string, meta: any, tabs: string[]): { result: DesignDocResult, errors: AddonError[] } {
+  const errors: AddonError[] = [];
+  
   const addonsDir = resolveUserDataSubDir("addons");
   if (!fs.existsSync(addonsDir)) {
     console.log("addons/ ディレクトリが存在しないため、スキップします。");
-    return { tabs };
+    return { result: { tabs }, errors };
   }
 
   const designDocFiles = fs.readdirSync(addonsDir).filter((f) => f.startsWith("designDoc") && f.endsWith(".ts") && !f.startsWith("filter"));
   if (designDocFiles.length === 0) {
     console.log("designDocアドオンが存在しないため、スキップします。");
-    return { tabs };
+    return { result: { tabs }, errors };
   }
 
   const inputData: { [filename: string]: any } = {};
@@ -145,28 +166,35 @@ export function runDesignDocAddons(inputDir: string, meta: any, tabs: string[]):
         console.log(`${addonName}: タイトルを「${currentTitle}」に変更しました`);
       }
     } catch (error: any) {
-      console.error(`designDocアドオン ${addonFile} の実行中にエラーが発生しました: ${error.message}`);
-      throw error;
+      errors.push({
+        addonName: addonFile,
+        error: error.message,
+        errorStack: error.stack,
+        timestamp: new Date().toLocaleString(),
+      });
+      console.warn(`警告: designDocアドオン ${addonFile} でエラーが発生しました。`);
     }
   }
 
-  return { tabs: currentTabs, title: currentTitle };
+  return { result: { tabs: currentTabs, title: currentTitle }, errors };
 }
 
-export function runFilterAddons(outputDir: string): void {
+export function runFilterAddons(outputDir: string): AddonError[] {
+  const errors: AddonError[] = [];
+  
   const addonsDir = resolveUserDataSubDir("addons");
   if (!fs.existsSync(addonsDir)) {
-    return;
+    return errors;
   }
 
   const filterFiles = fs.readdirSync(addonsDir).filter((f) => f.startsWith("filter") && f.endsWith(".ts"));
   if (filterFiles.length === 0) {
-    return;
+    return errors;
   }
 
   const files = fs.readdirSync(outputDir).filter((f) => f.endsWith(".tsv") || f.endsWith(".md"));
   if (files.length === 0) {
-    return;
+    return errors;
   }
 
   const fileInfos: { fileName: string; label: string }[] = files.map((f) => {
@@ -223,21 +251,30 @@ export function runFilterAddons(outputDir: string): void {
         }
       }
     } catch (error: any) {
-      console.error(`フィルターアドオン ${filterFile} の実行中にエラーが発生しました: ${error.message}`);
-      throw error;
+      errors.push({
+        addonName: filterFile,
+        error: error.message,
+        errorStack: error.stack,
+        timestamp: new Date().toLocaleString(),
+      });
+      console.warn(`警告: フィルターアドオン ${filterFile} でエラーが発生しました。`);
     }
   }
+  
+  return errors;
 }
 
-export function runHtmlAddons(meta: any): HtmlCustomResult {
+export function runHtmlAddons(meta: any): { result: HtmlCustomResult, errors: AddonError[] } {
+  const errors: AddonError[] = [];
+  
   const addonsDir = resolveUserDataSubDir("addons");
   if (!fs.existsSync(addonsDir)) {
-    return {};
+    return { result: {}, errors };
   }
 
   const htmlAddonFiles = fs.readdirSync(addonsDir).filter((f) => f.startsWith("html") && f.endsWith(".ts") && !f.startsWith("filter"));
   if (htmlAddonFiles.length === 0) {
-    return {};
+    return { result: {}, errors };
   }
 
   let result: HtmlCustomResult = {};
@@ -261,10 +298,15 @@ export function runHtmlAddons(meta: any): HtmlCustomResult {
       if (addonResult.js) result.js = addonResult.js;
       console.log(`${addonName}: カスタムCSS/JSを適用しました`);
     } catch (error: any) {
-      console.error(`HTMLアドオン ${addonFile} の実行中にエラーが発生しました: ${error.message}`);
-      throw error;
+      errors.push({
+        addonName: addonFile,
+        error: error.message,
+        errorStack: error.stack,
+        timestamp: new Date().toLocaleString(),
+      });
+      console.warn(`警告: HTMLアドオン ${addonFile} でエラーが発生しました。`);
     }
   }
 
-  return result;
+  return { result, errors };
 }

@@ -12,7 +12,15 @@ interface TsvData {
   rows: string[][];
 }
 
-export function generateStandaloneHtml(outputDir: string, meta: any) {
+interface AddonError {
+  addonName: string;
+  error: string;
+  errorCode?: string | null;
+  objectName?: string | null;
+  timestamp: string;
+}
+
+export function generateStandaloneHtml(outputDir: string, meta: any, errors: AddonError[] = []) {
   console.log("\n--- スタンダアロンHTMLを生成します ---");
 
   const standaloneDir = resolveUserDataSubDir("standaloneHtml");
@@ -99,6 +107,29 @@ export function generateStandaloneHtml(outputDir: string, meta: any) {
     });
   }
 
+  // HTMLアドオンを実行してエラー情報を収集
+  const htmlCustom = runHtmlAddons(meta);
+  const htmlCustomResult = htmlCustom.result;
+  const htmlErrors = htmlCustom.errors;
+  const allErrorsWithHtml = [...errors, ...htmlErrors];
+
+  // エラー情報をTSVデータとして追加
+  if (allErrorsWithHtml.length > 0) {
+    const errorRows = allErrorsWithHtml.map(err => [
+      err.addonName || err.objectName || "unknown",
+      err.error || "",
+      err.errorCode || "",
+      err.timestamp || "",
+    ]);
+    
+    tsvDataList.push({
+      name: "addonErrors.tsv",
+      meta: { label: "エラー情報" },
+      headers: ["名前", "エラー内容", "エラーコード", "発生時刻"],
+      rows: errorRows,
+    });
+  }
+
   const tsvDataJson = JSON.stringify(tsvDataList);
   const mdDataJson = JSON.stringify(mdDataList);
   const metaJson = JSON.stringify(meta);
@@ -120,8 +151,6 @@ export function generateStandaloneHtml(outputDir: string, meta: any) {
     "utf8",
   );
 
-  const htmlCustom = runHtmlAddons(meta);
-
   const html = viewerHtml
     .replace(/\{\{PAGE_TITLE\}\}/g, pageTitle)
     .replace(/\{\{VIEWER_CSS\}\}/g, viewerCss)
@@ -132,11 +161,11 @@ export function generateStandaloneHtml(outputDir: string, meta: any) {
     .replace(/\{\{TABS\}\}/g, tabsJson)
     .replace(
       /\{\{CUSTOM_CSS\}\}/g,
-      htmlCustom.css ? `\n  <style>${htmlCustom.css}</style>` : "",
+      htmlCustomResult.css ? `\n  <style>${htmlCustomResult.css}</style>` : "",
     )
     .replace(
       /\{\{CUSTOM_JS\}\}/g,
-      htmlCustom.js ? `\n  <script>${htmlCustom.js}</script>` : "",
+      htmlCustomResult.js ? `\n  <script>${htmlCustomResult.js}</script>` : "",
     );
 
   const outputPath = path.join(standaloneDir, "viewer.html");
