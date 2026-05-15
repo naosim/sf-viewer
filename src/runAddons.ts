@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { createRequire } from "module";
-import { FrontMatterTSV } from "./tsv-doc/frontMatter";
+import { FrontMatterTSV } from "./tsv-doc";
 import { resolveUserDataSubDir } from "./pathUtil";
 
 interface AddonResult {

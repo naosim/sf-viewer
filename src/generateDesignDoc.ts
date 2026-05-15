@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
-import { FrontMatterTSV } from "./tsv-doc/frontMatter";
+import { FrontMatterTSV } from "./tsv-doc";
 import { formatTimestamp } from "./sfUtil";
 import { resolveUserDataDir, resolveUserDataSubDir } from "./pathUtil";
 import { generate } from "./tsv-doc";
