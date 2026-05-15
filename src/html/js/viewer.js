@@ -52,7 +52,7 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
       layout: "fitDataFill",
       height: tableHeight,
       columns: data.headers.map(header => ({
-        title: header,
+        title: header.replace(/\n/g, "<br>"),
         field: header,
         headerFilter: "input",
         sortable: true

@@ -22,6 +22,7 @@ function parseArgs(args: string[]): { alias: string | null; userDataDir: string 
 interface QueryJob {
   fileName: string;
   label: string;
+  objectName?: string;
   tooling?: boolean;
 }
 
@@ -33,11 +34,42 @@ interface AddonError {
   timestamp: string;
 }
 
+type FieldLabelMap = Map<string, Map<string, string>>;
+
+function loadFieldLabels(inputDir: string): FieldLabelMap {
+  const fieldLabelMap: FieldLabelMap = new Map();
+  const fieldsJsonPath = path.join(inputDir, "fields.json");
+  if (!fs.existsSync(fieldsJsonPath)) {
+    return fieldLabelMap;
+  }
+
+  const fieldsData = JSON.parse(fs.readFileSync(fieldsJsonPath, "utf8"));
+  for (const obj of fieldsData.data) {
+    const fieldMap = new Map<string, string>();
+    for (const field of obj.fields) {
+      fieldMap.set(field.QualifiedApiName, field.Label);
+    }
+    fieldLabelMap.set(obj.objectName, fieldMap);
+  }
+  return fieldLabelMap;
+}
+
+function getHeaderWithLabel(apiName: string, fieldLabelMap: FieldLabelMap, objectName: string): string {
+  const objectFields = fieldLabelMap.get(objectName);
+  if (objectFields && objectFields.has(apiName)) {
+    const label = objectFields.get(apiName)!;
+    return `${label}\n${apiName}`;
+  }
+  return apiName;
+}
+
 function convertJsonToTsv(
   jsonPath: string,
   meta: { [key: string]: string | string[] },
   label: string,
   tsvPath: string,
+  fieldLabelMap?: FieldLabelMap,
+  objectName?: string,
 ): void {
   const metaWithLabel = { ...meta, label: label };
 
@@ -50,13 +82,17 @@ function convertJsonToTsv(
   const data = jsonData.data || jsonData;
   const records = data.result?.records || data.result || [];
 
-  const headers =
+  const apiHeaders =
     records.length > 0
       ? Object.keys(records[0]).filter((key) => key !== "attributes")
       : [];
 
+  const headers = fieldLabelMap && objectName
+    ? apiHeaders.map(apiName => getHeaderWithLabel(apiName, fieldLabelMap, objectName))
+    : apiHeaders;
+
   const rows = records.map((record: any) =>
-    headers.map((header) => {
+    apiHeaders.map((header) => {
       const value = record[header];
       if (value === null || value === undefined) return "";
       if (typeof value === "object") return JSON.stringify(value);
@@ -178,12 +214,14 @@ function main() {
     console.log(`fields.tsv を out_designDoc/fields.tsv に保存しました。`);
   }
 
+  const fieldLabelMap = loadFieldLabels(inputDir);
+
   const queryJobs: QueryJob[] = inputMeta.queryJobs || [];
   for (const job of queryJobs) {
     const jsonPath = path.join(inputDir, job.fileName);
     const tsvFileName = job.fileName.replace(".json", ".tsv");
     const tsvPath = path.join(outputDir, tsvFileName);
-    convertJsonToTsv(jsonPath, meta, job.label, tsvPath);
+    convertJsonToTsv(jsonPath, meta, job.label, tsvPath, fieldLabelMap, job.objectName);
     console.log(
       `${tsvFileName} を out_designDoc/${tsvFileName} に保存しました。`,
     );

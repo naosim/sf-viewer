@@ -79,6 +79,7 @@ async function main() {
     fileName: job.fileName,
     label: job.label,
     tooling: job.tooling,
+    objectName: job.objectName,
   }));
 
   const sfClient = new SfClient(alias, outputDir, retrievedAt, options);
