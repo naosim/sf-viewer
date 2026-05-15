@@ -1,9 +1,9 @@
 import * as fs from "fs";
 import * as path from "path";
-import { FrontMatterTSV } from "./FrontMatterTSV";
+import { FrontMatterTSV } from "./tsv-doc/frontMatter";
 import { formatTimestamp } from "./sfUtil";
 import { resolveUserDataDir, resolveUserDataSubDir } from "./pathUtil";
-import { generateStandaloneHtml } from "./generateStandaloneHtml";
+import { generate } from "./tsv-doc";
 import { runAddons, runDesignDocAddons, runFilterAddons, runHtmlAddons } from "./runAddons";
 
 function parseArgs(args: string[]): { alias: string | null; userDataDir: string | null } {
@@ -266,7 +266,11 @@ function main() {
 
   console.log("--- 処理2: 完了 ---");
 
-  generateStandaloneHtml(outputDir, inputMeta, allErrors);
+  const tsvDocOptions = {
+    inputDir: outputDir,
+    outputDir: path.join(outputDir, "..", "standaloneHtml"),
+  };
+  generate(tsvDocOptions);
 }
 
 function convertSobjectFieldsToTsv(inputDir: string, outputDir: string): void {
