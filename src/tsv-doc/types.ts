@@ -8,6 +8,13 @@ export interface HtmlCustomOptions {
   js?: string;
 }
 
+export interface InputMeta {
+  tabs?: string[];
+  title?: string;
+  alias?: string;
+  retrievedAt?: string;
+}
+
 export interface TsvData {
   name: string;
   meta: { [key: string]: string };

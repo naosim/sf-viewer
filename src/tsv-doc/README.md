@@ -36,18 +36,29 @@ generate({
 
 - `*.tsv` - TSVファイル（FrontMatter対応）
 - `*.md` - Markdownファイル
-- `meta.json` - メタデータ（tabs, title 等）
+- `meta.json` - メタデータ
 
 ### meta.json の形式
 
 ```json
 {
-  "tabs": ["fields.tsv", "flows.tsv"],
+  "tabs": ["fields.tsv", "flows.tsv", "cronJobs.tsv"],
   "title": "基本設計書",
   "alias": "dev",
   "retrievedAt": "2026/5/15 12:00:00"
 }
 ```
+
+| フィールド | 必須 | 説明 |
+|-----------|------|------|
+| tabs | 必須 | 表示するタブのファイル名一覧（配列） |
+| title | 推奨 | ページタイトル（未指定時はデフォルト値"TSV Doc Viewer"） |
+| alias | 任意 | バックアップフォルダ名に使用 |
+| retrievedAt | 任意 | バックアップフォルダ名に使用 |
+
+### meta.json の例
+
+`templates/meta.json.example` も参照してください。
 
 ## TSV形式
 
@@ -60,6 +71,27 @@ alias: dev
 ---
 ObjectName  FieldName  Label
 Account     Name       取引先名
+```
+
+## 型定義
+
+```typescript
+interface ViewerOptions {
+  inputDir: string;   // 入力ディレクトリ（TSV/MD/meta.json 配置場所）
+  outputDir: string;  // 出力ディレクトリ（viewer.html 保存先）
+}
+
+interface HtmlCustomOptions {
+  css?: string;       // カスタムCSS
+  js?: string;        // カスタムJS
+}
+
+interface InputMeta {
+  tabs?: string[];      // 表示するタブのファイル名一覧
+  title?: string;       // ページタイトル
+  alias?: string;       // エイリアス
+  retrievedAt?: string; // 取得日時
+}
 ```
 
 ## 出力
