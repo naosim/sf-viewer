@@ -1,6 +1,16 @@
 function initViewer(tsvDataList, mdDataList, meta, tabs) {
   const MAX_UNIQUE_VALUES_DISPLAY = 30;
 
+  // タイムゾーン情報を取得して表示
+  const timezoneName = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const tzOffset = new Date().getTimezoneOffset();
+  const sign = tzOffset >= 0 ? '-' : '+';
+  const hours = String(Math.abs(Math.floor(tzOffset / 60))).padStart(2, '0');
+  const timezoneInfo = `${timezoneName} (UTC${sign}${hours})`;
+  document.querySelectorAll('.timezone-info').forEach(el => {
+    el.textContent = timezoneInfo;
+  });
+
   mermaid.initialize({ startOnLoad: false });
 
   document.getElementById('alias').textContent = meta.alias || '';
