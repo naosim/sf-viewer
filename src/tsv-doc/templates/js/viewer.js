@@ -30,6 +30,38 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
   function parseAndEvaluateFilter(expr, data) {
     let parsed = expr;
 
+    // DateTime() / Date() 関数を変換
+    const dateTimeRegex = /(?:DateTime|Date)\(['"]([^'"]+)['"]\)/gi;
+    let invalidDates = [];
+    parsed = parsed.replace(dateTimeRegex, (match, dateStr) => {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) {
+        invalidDates.push(dateStr);
+        return 'null';
+      }
+      return `new Date('${dateStr}')`;
+    });
+
+    // Invalid 日付がある場合は警告表示してフィルターをクリア
+    if (invalidDates.length > 0) {
+      showToast(`無効な日付: ${invalidDates.join(', ')}`);
+      if (activeTable) {
+        activeTable.clearFilter();
+      }
+      return true;
+    }
+
+    // Date/DateTime と ==, != の組み合わせを检测
+    const hasDate = expr.includes('DateTime(') || expr.includes('Date(');
+    const hasEqNe = /==|!=/.test(expr);
+    if (hasDate && hasEqNe) {
+      showToast('日付の ==, != は未対応です。範囲指定を使用してください。');
+      if (activeTable) {
+        activeTable.clearFilter();
+      }
+      return true;
+    }
+
     parsed = parsed.replace(/(\w+)\s+IN\s*\(([^)]+)\)/gi, (match, col, values) => {
       const list = values.split(',').map(v => v.trim().replace(/['"]/g, ''));
       return `[${list.map(v => `'${v}'`).join(',')}].includes(__COL__)`.replace('__COL__', col);
@@ -61,6 +93,16 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
       }
       return match;
     });
+
+    // 左辺（日付列）をDateに変換 - 列参照を置換後に処理
+    const hasDateTime = expr.includes('DateTime(') || expr.includes('Date(');
+    if (hasDateTime) {
+      const comparisonMatch = expr.replace(dateTimeRegex, '').match(/([A-Za-z_][A-Za-z0-9_]*)\s*(>=?|==|!=|<=?)/);
+      if (comparisonMatch && comparisonMatch[1]) {
+        const colName = comparisonMatch[1];
+        parsed = parsed.replace(`data.${colName}`, `(new Date(data.${colName}))`);
+      }
+    }
 
     try {
       return new Function('data', `try { return (${parsed}); } catch(e) { return false; }`)(data);

@@ -7,7 +7,7 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/tabulator/5.5.0/css/tabulator.min.css" rel="stylesheet">
   <style>{{VIEWER_CSS}}</style>
   {{CUSTOM_CSS}}
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.8.1/github-markdown-light.css" integrity="sha512-CxC9MO8FBaaq8vl9yaXHxjgWd7uXqx3pWMSBP3daioTTI0gpXijlypuMV67NoE1bPYMzj7zSNNS0o+jFFdFodgA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.8.1/github-markdown-light.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body>
   <header>
@@ -47,13 +47,19 @@
           <tr><td>LIKE</td><td>部分一致（%がワイルドカード）</td></tr>
           <tr><td>IS NULL</td><td>空値判定</td></tr>
           <tr><td>IS NOT NULL</td><td>非空値判定</td></tr>
+          <tr><td>DateTime('YYYY-MM-DD')</td><td>日付</td></tr>
+          <tr><td>DateTime('YYYY-MM-DDTHH:MM:SS')</td><td>日付時刻</td></tr>
         </table>
         <h3>使用例</h3>
         <pre class="help-example">ProductCode IN ('GC1060', 'GC1020')
 ProductCode == 'GC1060' AND IsActive == true
 Name LIKE '%Diesel%'
 Description IS NULL
-(Status == 'Active' OR Status == 'Pending') AND IsActive == true</pre>
+(Status == 'Active' OR Status == 'Pending') AND IsActive == true
+CreatedDate > DateTime('2024-01-01')
+LastModifiedDate >= DateTime('2025-01-01T09:00:00')
+※ 日付の ==, != は未対応です。範囲指定を使用してください。
+例: CreatedDate >= Date('2026-04-22') AND CreatedDate < Date('2026-04-23')</pre>
       </div>
     </div>
   </div>
