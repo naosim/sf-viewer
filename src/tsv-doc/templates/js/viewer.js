@@ -1,4 +1,6 @@
 function initViewer(tsvDataList, mdDataList, meta, tabs) {
+  const MAX_UNIQUE_VALUES_DISPLAY = 30;
+
   mermaid.initialize({ startOnLoad: false });
 
   document.getElementById('alias').textContent = meta.alias || '';
@@ -23,6 +25,115 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
   });
 
   let activeTable = null;
+  let currentFilterText = "";
+
+  function parseAndEvaluateFilter(expr, data) {
+    let parsed = expr;
+
+    parsed = parsed.replace(/(\w+)\s+IN\s*\(([^)]+)\)/gi, (match, col, values) => {
+      const list = values.split(',').map(v => v.trim().replace(/['"]/g, ''));
+      return `[${list.map(v => `'${v}'`).join(',')}].includes(__COL__)`.replace('__COL__', col);
+    });
+
+    parsed = parsed.replace(/(\w+)\s+NOT\s+IN\s*\(([^)]+)\)/gi, (match, col, values) => {
+      const list = values.split(',').map(v => v.trim().replace(/['"]/g, ''));
+      return `![${list.map(v => `'${v}'`).join(',')}].includes(__COL__)`.replace('__COL__', col);
+    });
+
+    parsed = parsed.replace(/(\w+)\s+LIKE\s+['"]([^'"]+)['"]/gi, (match, col, pattern) => {
+      const isStart = pattern.startsWith('%');
+      const isEnd = pattern.endsWith('%');
+      const text = pattern.replace(/%/g, '');
+      if (isStart && isEnd) return `__COL__.includes('${text}')`.replace('__COL__', col);
+      if (isStart) return `__COL__.endsWith('${text}')`.replace('__COL__', col);
+      if (isEnd) return `__COL__.startsWith('${text}')`.replace('__COL__', col);
+      return `__COL__.includes('${text}')`.replace('__COL__', col);
+    });
+
+    parsed = parsed.replace(/(\w+)\s+IS\s+NULL/gi, '__COL__ == null'.replace('__COL__', '$1'));
+    parsed = parsed.replace(/(\w+)\s+IS\s+NOT\s+NULL/gi, '__COL__ != null'.replace('__COL__', '$1'));
+
+    parsed = parsed.replace(/\bAND\b/gi, '&&').replace(/\bOR\b/gi, '||');
+
+    parsed = parsed.replace(/\b([A-Za-z_][A-Za-z0-9_]*)\b/g, (match) => {
+      if (data.hasOwnProperty(match)) {
+        return `data.${match}`;
+      }
+      return match;
+    });
+
+    try {
+      return new Function('data', `try { return (${parsed}); } catch(e) { return false; }`)(data);
+    } catch (e) {
+      return true;
+    }
+  }
+
+  function applyFilter(filterText) {
+    currentFilterText = filterText;
+    const errorEl = document.getElementById('filterError');
+    errorEl.textContent = '';
+
+    if (!filterText.trim()) {
+      if (activeTable) {
+        activeTable.clearFilter();
+      }
+      return;
+    }
+
+    if (!activeTable) return;
+
+    const filterFunc = (data) => parseAndEvaluateFilter(filterText, data);
+    activeTable.setFilter(filterFunc);
+  }
+
+  function showColumnInfo(header, apiName, label) {
+    const modal = document.getElementById('columnInfoModal');
+    document.getElementById('modalColumnName').innerHTML = header.replace(/\n/g, '<br>');
+    document.getElementById('columnApiName').textContent = `API名: ${apiName}`;
+    document.getElementById('columnLabel').textContent = `ラベル: ${label}`;
+
+    const uniqueValues = [...new Set(activeTable.getData().map(row => row[header]))]
+      .filter(v => v && v.trim());
+
+    const valuesSection = document.querySelector('.column-info-section:nth-child(2)');
+    if (uniqueValues.length > MAX_UNIQUE_VALUES_DISPLAY) {
+      valuesSection.style.display = 'none';
+    } else {
+      valuesSection.style.display = 'block';
+      const ul = document.getElementById('columnValues');
+      ul.innerHTML = uniqueValues.map(v => `<li>${v}</li>`).join('');
+    }
+
+    modal.style.display = 'block';
+  }
+
+  document.getElementById('modalClose').onclick = () => {
+    document.getElementById('columnInfoModal').style.display = 'none';
+  };
+
+  window.onclick = (e) => {
+    const modal = document.getElementById('columnInfoModal');
+    if (e.target === modal) {
+      modal.style.display = 'none';
+    }
+  };
+
+  document.getElementById('filterBtn').addEventListener('click', () => {
+    const filterText = document.getElementById('filterInput').value;
+    applyFilter(filterText);
+  });
+
+  document.getElementById('filterClear').addEventListener('click', () => {
+    document.getElementById('filterInput').value = '';
+    applyFilter('');
+  });
+
+  document.getElementById('filterInput').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      applyFilter(e.target.value);
+    }
+  });
 
   function loadTable(fileName) {
     const data = tsvDataList.find(d => d.name === fileName);
@@ -35,6 +146,8 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
       const obj = {};
       data.headers.forEach((header, i) => {
         obj[header] = row[i];
+        const parts = header.split('\n');
+        if (parts[1]) obj[parts[1]] = row[i];
       });
       return obj;
     });
@@ -45,19 +158,37 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
 
     const headerHeight = document.querySelector("header").offsetHeight;
     const tabsHeight = document.querySelector(".tabs").offsetHeight;
-    const tableHeight = `calc(100vh - ${headerHeight + tabsHeight + 20}px)`;
+    const filterHeight = document.querySelector(".filter-bar").offsetHeight;
+    const tableHeight = `calc(100vh - ${headerHeight + tabsHeight + filterHeight + 30}px)`;
 
     activeTable = new Tabulator("#table", {
       data: tableData,
       layout: "fitDataFill",
       height: tableHeight,
-      columns: data.headers.map(header => ({
-        title: header.replace(/\n/g, "<br>"),
-        field: header,
-        headerFilter: "input",
-        sortable: true
-      })),
+      columns: data.headers.map(header => {
+        const parts = header.split('\n');
+        const apiName = parts[1] || parts[0];
+        const label = parts[0] || '';
+        return {
+          title: `<span>${header.replace(/\n/g, '<br>')}</span><span class="column-info-btn" data-header="${header}" data-api="${apiName}" data-label="${label}">&#9432;</span>`,
+          field: header,
+          sortable: true,
+        };
+      }),
     });
+
+    document.getElementById('table').addEventListener('click', (e) => {
+      if (e.target.classList.contains('column-info-btn')) {
+        const header = e.target.dataset.header;
+        const apiName = e.target.dataset.api;
+        const label = e.target.dataset.label;
+        showColumnInfo(header, apiName, label);
+      }
+    });
+
+    if (currentFilterText.trim()) {
+      applyFilter(currentFilterText);
+    }
   }
 
   function loadMarkdown(fileName) {

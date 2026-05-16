@@ -46,6 +46,30 @@ header .meta {
     color: white;
     border-bottom-color: #3498db;
 }
+.filter-bar {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background: #ecf0f1;
+    align-items: center;
+    flex-wrap: wrap;
+}
+#filterInput {
+    flex: 1;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    min-width: 200px;
+}
+#filterBtn, #filterClear {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+.filter-error {
+    color: #e74c3c;
+    font-size: 0.625rem;
+    padding: 0.25rem;
+}
 .content {
     padding: 0.25rem;
 }
@@ -76,6 +100,73 @@ header .meta {
     text-align: center;
     padding: 0.5rem;
     color: #7f8c8d;
+    font-size: 0.75rem;
+}
+
+.column-info-btn {
+    cursor: pointer;
+    margin-left: 0.5rem;
+    color: #3498db;
+    font-size: 0.875rem;
+}
+.column-info-btn:hover {
+    color: #2980b9;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+}
+.modal-content {
+    background: white;
+    margin: 3%;
+    height: 94%;
+    display: flex;
+    flex-direction: column;
+    border-radius: 4px;
+}
+.modal-header {
+    padding: 1rem;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.modal-header h2 {
+    font-size: 1rem;
+    margin: 0;
+}
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+.modal-body {
+    flex: 1;
+    overflow: auto;
+    padding: 1rem;
+}
+.column-info-section {
+    margin-bottom: 1.5rem;
+}
+.column-info-section h3 {
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+    color: #2c3e50;
+}
+.column-info-section ul {
+    list-style: none;
+    padding: 0;
+}
+.column-info-section li {
+    padding: 0.25rem 0;
     font-size: 0.75rem;
 }
 .error {

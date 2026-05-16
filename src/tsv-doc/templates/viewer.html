@@ -20,10 +20,37 @@
 
   <div class="tabs" id="tabs"></div>
 
+  <div class="filter-bar">
+    <input type="text" id="filterInput" placeholder="例: ProductCode IN ('GC1060', 'GC1020')">
+    <button id="filterBtn">適用</button>
+    <button id="filterClear">クリア</button>
+    <span id="filterError" class="filter-error"></span>
+  </div>
+
   <div class="content">
     <div class="table-container">
       <div id="table"></div>
       <div id="markdown" class="markdown-body"></div>
+    </div>
+  </div>
+
+  <div id="columnInfoModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalColumnName"></h2>
+        <button id="modalClose" class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="column-info-section">
+          <h3>カラム情報</h3>
+          <p id="columnApiName"></p>
+          <p id="columnLabel"></p>
+        </div>
+        <div class="column-info-section">
+          <h3>値のバリエーション</h3>
+          <ul id="columnValues"></ul>
+        </div>
+      </div>
     </div>
   </div>
 

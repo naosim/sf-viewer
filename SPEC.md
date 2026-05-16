@@ -119,6 +119,14 @@ npx sf-viewer dev
 - 各TSVファイルには label メタデータが含まれる（fields.tsvは「オブジェクト定義」、他はqueryJobのlabel）
 - 出力前に前回出力を `userData/out_designDoc/backup/{timestamp}_{alias}/` にバックアップ
 
+#### TSVの列順序
+TSVを出力する際、識別しやすい列を優先して左側に配置します:
+1. **Id** - レコードID（最優先）
+2. **Name** - 名前
+3. **Title** - タイトル
+
+（大文字小文字区別なし、API名で判定）
+
 ## 実行
 
 ### 一括実行（処理1 + 処理2）
@@ -141,9 +149,33 @@ npx sf-viewer dev1
 - 出力先: `userData/standaloneHtml/viewer.html`
 - 外部依存なし（CDNは使用）
 - 表示仕様はHTML Viewerと同じ（Tabulator使用、タブ切り替え）
-- HTMLテンプレート: `src/html/viewer.html`（プレースホルダー: `{{PAGE_TITLE}}`, `{{VIEWER_CSS}}`, `{{VIEWER_JS}}`, `{{TSV_DATA}}`, `{{MD_DATA}}`, `{{META}}`, `{{TABS}}`, `{{CUSTOM_CSS}}`, `{{CUSTOM_JS}}`）
-- CSS: `src/html/css/viewer.css`
-- JS: `src/html/js/viewer.js`
+- HTMLテンプレート: `src/tsv-doc/templates/viewer.html`（プレースホルダー: `{{PAGE_TITLE}}`, `{{VIEWER_CSS}}`, `{{VIEWER_JS}}`, `{{TSV_DATA}}`, `{{MD_DATA}}`, `{{META}}`, `{{TABS}}`, `{{CUSTOM_CSS}}`, `{{CUSTOM_JS}}`）
+- CSS: `src/tsv-doc/templates/css/viewer.css`
+- JS: `src/tsv-doc/templates/js/viewer.js`
+
+#### フィルター機能
+viewer.html にはデータフィルタリング機能が組み込まれています。フィルター式には以下の演算子に対応:
+
+| 演算子 | 例 | 説明 |
+|-------|-----|------|
+| `==` | `ProductCode == 'GC1060'` | 等しい |
+| `!=` | `IsActive != true` | 等しくない |
+| `>` `>=` `<` `<=` | `Price > 100` | 数値比較 |
+| `AND` / `&&` | `A == 1 AND B == 2` | 論理積 |
+| `OR` / \|\| | `A == 1 OR A == 2` | 論理和 |
+| `IN` | `ProductCode IN ('GC1060', 'GC1020')` | リストに含まれる |
+| `NOT IN` | `Status NOT IN ('Active', 'Pending')` | リストに含まれない |
+| `LIKE` | `Name LIKE '%Diesel%'` | 部分一致（`%` はワイルドカード） |
+| `IS NULL` | `Description IS NULL` | 空値判定 |
+| `IS NOT NULL` | `Description IS NOT NULL` | 非空値判定 |
+
+- フィルター条件はタブを切り替えても保持されます
+- 値のバリエーションが10件を超える列は、ポップアップに値が一覧表示されません
+
+#### カラム情報ボタン
+各列のヘッダーには ℹ️ ボタンをクリックするとポップアップが表示され、以下の情報を確認できます:
+- **カラム情報**: API名、ラベル
+- **値のバリエーション**: 現在表示中のデータから一意な値を最大10件表示（11件以上の場合は非表示）
 
 ### URL パラメータによるタブ直接表示
 `viewer.html?page=filename.tsv` で対応するタブを直接表示できます。
