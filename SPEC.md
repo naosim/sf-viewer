@@ -30,7 +30,14 @@ sf-viewer/
 ```
 
 ### データディレクトリの指定
-`--user-data-dir` オプションでデータディレクトリのパスを指定できます。指定しない場合は `./userData`（プロジェクトルートからの相対パス）が使用されます。
+`--user-data-dir` オプションでデータディレクトリのパスを指定できます。相対パスは**コマンドを実行したディレクトリ**を基準に解決されます。指定しない場合は `./userData` が使用されます。
+
+```bash
+# プロジェクト外から実行する場合、-C でプロジェクトディレクトリを指定
+cd /c/Users/nao_p/git
+npx -C ./sf-viewer sf-viewer dev --user-data-dir ./userData
+# → /c/Users/nao_p/git/userData を参照
+```
 
 #### 引数の順序
 
@@ -38,16 +45,16 @@ sf-viewer/
 
 ```
 # 推奨: alias を先に指定
-npx ts-node src/index.ts dev --user-data-dir ./myData
+npx sf-viewer dev --user-data-dir ./myData
 
 # または --user-data-dir を先に指定
-npx ts-node src/index.ts --user-data-dir ./myData dev
+npx sf-viewer --user-data-dir ./myData dev
 
 # 基本設計書のみ再生成
-npx ts-node src/generateDesignDoc.ts dev --user-data-dir ./myData
+npx sf-viewer dev --generate-only --user-data-dir ./myData
 
 # デフォルトのデータディレクトリを使用
-npx ts-node src/index.ts dev
+npx sf-viewer dev
 ```
 
 ## 処理ステップ
@@ -117,15 +124,15 @@ npx ts-node src/index.ts dev
 ### 一括実行（処理1 + 処理2）
 ```
 # デフォルトaliasを使用
-npx ts-node src/index.ts
+npx sf-viewer
 
 # 明示的にaliasを指定
-npx ts-node src/index.ts dev1
+npx sf-viewer dev1
 ```
 
 ### 個別実行
 - 処理1のみ（データ取得）: `npx ts-node src/retrieveData.ts dev --user-data-dir ./myData`
-- 処理2のみ（基本設計書生成）: `npx ts-node src/generateDesignDoc.ts dev --user-data-dir ./myData`（TSVとスタンダアロンHTMLを両方生成）
+- 処理2のみ（基本設計書生成）: `npx sf-viewer dev --generate-only --user-data-dir ./myData`（TSVとスタンダアロンHTMLを両方生成）
 
 > **注意**: retrieveData.ts と generateDesignDoc.ts は連携しており、retrieveData.ts で生成した output/*.json を generateDesignDoc.ts で読み込みます。個別に実行する場合も、同じ `--user-data-dir` を指定してください。
 

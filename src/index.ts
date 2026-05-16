@@ -8,18 +8,19 @@ interface EnvEntry {
   isDefault?: boolean;
 }
 
-function parseArgs(args: string[]): { alias: string | null; onlyObjects: boolean; userDataDir: string | null } {
+function parseArgs(args: string[]): { alias: string | null; onlyObjects: boolean; userDataDir: string | null; generateOnly: boolean } {
   const onlyObjects = args.includes("--only-objects");
+  const generateOnly = args.includes("--generate-only");
   const userDataDirIndex = args.indexOf("--user-data-dir");
   const userDataDir = userDataDirIndex >= 0 && userDataDirIndex < args.length - 1
     ? args[userDataDirIndex + 1]
     : null;
   const aliasArgs = args.filter((arg) =>
-    arg !== "--" && arg !== "--only-objects" && arg !== "--user-data-dir"
+    arg !== "--" && arg !== "--only-objects" && arg !== "--user-data-dir" && arg !== "--generate-only"
   );
   const aliasIndex = aliasArgs.findIndex((arg) => !arg.startsWith("-"));
   const alias = aliasIndex >= 0 && aliasIndex < aliasArgs.length ? aliasArgs[aliasIndex] : null;
-  return { alias, onlyObjects, userDataDir };
+  return { alias, onlyObjects, userDataDir, generateOnly };
 }
 
 function loadEnvAlias(requestedAlias: string | null, userDataDir: string): string {
@@ -78,14 +79,15 @@ const runScript = (
 };
 
 async function main() {
-  const { alias: requestedAlias, onlyObjects, userDataDir: rawUserDataDir } = parseArgs(
+  const { alias: requestedAlias, onlyObjects, userDataDir: rawUserDataDir, generateOnly } = parseArgs(
     process.argv.slice(2),
   );
   const userDataDir = resolveUserDataDir(rawUserDataDir);
   const alias = loadEnvAlias(requestedAlias, userDataDir);
 
-  console.log("=== Salesforce データ取得と基本設計書生成 ===\n");
-  console.log(`対象エイリアス: ${alias}${onlyObjects ? " (--only-objects)" : ""}`);
+  const title = generateOnly ? "基本設計書を生成します" : "Salesforce データ取得と基本設計書生成";
+  console.log(`=== ${title} ===\n`);
+  console.log(`対象エイリアス: ${alias}${onlyObjects ? " (--only-objects)" : ""}${generateOnly ? " (--generate-only)" : ""}`);
   console.log(`データディレクトリ: ${userDataDir}\n`);
 
   if (!fs.existsSync(userDataDir)) {
@@ -94,16 +96,21 @@ async function main() {
   }
 
   try {
-    console.log("--- 処理1: Salesforceからデータを取得します ---");
-    const isOnlyObjects = await runScript("src/retrieveData.ts", alias, onlyObjects, userDataDir);
+    if (generateOnly) {
+      console.log("--- 処理2: 基本設計書を生成します ---");
+      await runScript("src/generateDesignDoc.ts", alias, false, userDataDir);
+    } else {
+      console.log("--- 処理1: Salesforceからデータを取得します ---");
+      const isOnlyObjects = await runScript("src/retrieveData.ts", alias, onlyObjects, userDataDir);
 
-    if (isOnlyObjects) {
-      console.log("\n--only-objects オプションのため処理を終了します。");
-      process.exit(0);
+      if (isOnlyObjects) {
+        console.log("\n--only-objects オプションのため処理を終了します。");
+        process.exit(0);
+      }
+
+      console.log("\n--- 処理2: 基本設計書を生成します ---");
+      await runScript("src/generateDesignDoc.ts", alias, false, userDataDir);
     }
-
-    console.log("\n--- 処理2: 基本設計書を生成します ---");
-    await runScript("src/generateDesignDoc.ts", alias, false, userDataDir);
 
     console.log("\n=== 全ての処理が完了しました ===");
   } catch (error: any) {

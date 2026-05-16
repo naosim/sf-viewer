@@ -89,7 +89,7 @@ alias(-a)の値も任意の値にできます。
 まず、`--only-objects` オプションでオブジェクト一覧を取得します。
 
 ```bash
-npx ts-node src/index.ts --only-objects
+npx sf-viewer --only-objects
 ```
 
 取得対象のオブジェクト一覧がログに出力されます。不要なオブジェクトがあれば `config.json` の `objectBlackList` に追加してください。
@@ -100,10 +100,10 @@ blacklistを更新したら、通常通り実行します。
 
 ```bash
 # デフォルトのaliasを使用する場合
-npx ts-node src/index.ts
+npx sf-viewer
 
 # 明示的にaliasを指定する場合
-npx ts-node src/index.ts dev1
+npx sf-viewer dev1
 ```
 
 ### コマンドライン引数
@@ -114,10 +114,10 @@ npx ts-node src/index.ts dev1
 
 ```bash
 # 推奨: alias を先に指定
-npx ts-node src/index.ts dev --user-data-dir ./myData
+npx sf-viewer dev --user-data-dir ./myData
 
 # または --user-data-dir を先に指定
-npx ts-node src/index.ts --user-data-dir ./myData dev
+npx sf-viewer --user-data-dir ./myData dev
 ```
 
 #### オプション
@@ -125,29 +125,41 @@ npx ts-node src/index.ts --user-data-dir ./myData dev
 | オプション | 説明 | 例 |
 |-----------|------|-----|
 | `alias` | Salesforce組織のエイリアス（env.jsonで定義） | `dev`, `dev1` |
-| `--user-data-dir` | データディレクトリのパス（デフォルト: `./userData`） | `./myData`, `/path/to/data` |
+| `--user-data-dir` | データディレクトリのパス。相対パスはコマンド実行ディレクトリを基準（デフォルト: `./userData`） | `./myData`, `/path/to/data` |
 | `--only-objects` | オブジェクト一覧のみ取得（blacklist確認用） | フラグのみ |
+| `--generate-only` | 基本設計書生成のみ（データ取得をスキップ） | フラグのみ |
+
+#### 相対パスの解決
+
+`--user-data-dir` の相対パスは、**コマンドを実行したディレクトリ**（npx を実行したディレクトリ）を基準に解決されます。
+
+```bash
+# プロジェクト外から実行する場合、-C でプロジェクトディレクトリを指定
+cd /c/Users/nao_p/git
+npx -C ./sf-viewer sf-viewer dev --user-data-dir ./userData
+# → /c/Users/nao_p/git/userData を参照
+```
 
 #### 使用例
 
 ```bash
 # デフォルト設定で実行（userDataディレクトリ、env.jsonのisDefaultを使用）
-npx ts-node src/index.ts
+npx sf-viewer
 
 # alias を明示的に指定
-npx ts-node src/index.ts dev
+npx sf-viewer dev
 
 # カスタムデータディレクトリを指定（alias は env.json の isDefault を使用）
-npx ts-node src/index.ts --user-data-dir ./myData
+npx sf-viewer --user-data-dir ./myData
 
 # alias とデータディレクトリを両方指定（推奨）
-npx ts-node src/index.ts dev --user-data-dir ./myData
+npx sf-viewer dev --user-data-dir ./myData
 
 # 基本設計書のみ再生成（データ取得スキップ）
-npx ts-node src/generateDesignDoc.ts dev --user-data-dir ./myData
+npx sf-viewer dev --generate-only --user-data-dir ./myData
 
 # オブジェクト一覧のみ取得（blacklist確認用）
-npx ts-node src/index.ts dev --only-objects
+npx sf-viewer dev --only-objects
 ```
 
 ### 6. スタンダアロンHTMLを開く
@@ -191,7 +203,7 @@ npx ts-node src/index.ts dev --only-objects
 ## 個別実行
 
 - データ取得のみ: `npx ts-node src/retrieveData.ts dev --user-data-dir ./myData`
-- 基本設計書生成のみ: `npx ts-node src/generateDesignDoc.ts dev --user-data-dir ./myData`（TSVとスタンダアロンHTMLを両方生成）
+- 基本設計書生成のみ: `npx sf-viewer dev --generate-only --user-data-dir ./myData`（TSVとスタンダアロンHTMLを両方生成）
 
 > **注意**: retrieveData.ts と generateDesignDoc.ts は連携しており、retrieveData.ts で生成した output/*.json を generateDesignDoc.ts で読み込みます。個別に実行する場合も、同じ `--user-data-dir` を指定してください。
 
