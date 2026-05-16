@@ -65,6 +65,25 @@ header .meta {
     font-size: 0.75rem;
     cursor: pointer;
 }
+.filter-help-btn {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    border: 1px solid #95a5a6;
+    background: white;
+    color: #95a5a6;
+    font-size: 0.75rem;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.filter-help-btn:hover {
+    background: #3498db;
+    color: white;
+    border-color: #3498db;
+}
 .filter-error {
     color: #e74c3c;
     font-size: 0.625rem;
@@ -203,6 +222,32 @@ header .meta {
 }
 .toast.show {
     opacity: 1;
+}
+.modal-small {
+    max-width: 500px;
+    margin: 5% auto;
+}
+.help-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.75rem;
+    margin-bottom: 1rem;
+}
+.help-table td {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid #ddd;
+}
+.help-table td:first-child {
+    width: 40%;
+    font-family: monospace;
+}
+.help-example {
+    background: #f8f9fa;
+    padding: 0.75rem;
+    font-size: 0.625rem;
+    border-radius: 4px;
+    overflow-x: auto;
+    white-space: pre;
 }
 .error {
     text-align: center;

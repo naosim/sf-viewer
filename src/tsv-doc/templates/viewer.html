@@ -24,7 +24,38 @@
     <input type="text" id="filterInput" placeholder="例: ProductCode IN ('GC1060', 'GC1020')">
     <button id="filterBtn">適用</button>
     <button id="filterClear">クリア</button>
+    <button id="filterHelpBtn" class="filter-help-btn">?</button>
     <span id="filterError" class="filter-error"></span>
+  </div>
+
+  <div id="filterHelpModal" class="modal">
+    <div class="modal-content modal-small">
+      <div class="modal-header">
+        <h2>フィルターの入力方法</h2>
+        <button id="filterHelpClose" class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <h3>対応演算子</h3>
+        <table class="help-table">
+          <tr><td>==</td><td>等しい</td></tr>
+          <tr><td>!=</td><td>等しくない</td></tr>
+          <tr><td>&gt; &gt;= &lt; &lt;=</td><td>数値比較</td></tr>
+          <tr><td>AND / &&</td><td>論理積</td></tr>
+          <tr><td>OR / ||</td><td>論理和</td></tr>
+          <tr><td>IN</td><td>リストに含まれる</td></tr>
+          <tr><td>NOT IN</td><td>リストに含まれない</td></tr>
+          <tr><td>LIKE</td><td>部分一致（%がワイルドカード）</td></tr>
+          <tr><td>IS NULL</td><td>空値判定</td></tr>
+          <tr><td>IS NOT NULL</td><td>非空値判定</td></tr>
+        </table>
+        <h3>使用例</h3>
+        <pre class="help-example">ProductCode IN ('GC1060', 'GC1020')
+ProductCode == 'GC1060' AND IsActive == true
+Name LIKE '%Diesel%'
+Description IS NULL
+(Status == 'Active' OR Status == 'Pending') AND IsActive == true</pre>
+      </div>
+    </div>
   </div>
 
   <div class="content">

@@ -153,6 +153,21 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
     applyFilter('');
   });
 
+  document.getElementById('filterHelpBtn').addEventListener('click', () => {
+    document.getElementById('filterHelpModal').style.display = 'block';
+  });
+
+  document.getElementById('filterHelpClose').onclick = () => {
+    document.getElementById('filterHelpModal').style.display = 'none';
+  };
+
+  window.onclick = (e) => {
+    const filterHelpModal = document.getElementById('filterHelpModal');
+    if (e.target === filterHelpModal) {
+      filterHelpModal.style.display = 'none';
+    }
+  };
+
   document.getElementById('filterInput').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
       applyFilter(e.target.value);
