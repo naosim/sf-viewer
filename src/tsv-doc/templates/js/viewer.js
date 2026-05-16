@@ -174,6 +174,19 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
     }
   });
 
+  function inferAndConvert(value) {
+    if (!value || value.trim() === '') return null;
+
+    const v = value.trim();
+
+    if (v.toLowerCase() === 'true') return true;
+    if (v.toLowerCase() === 'false') return false;
+
+    if (!isNaN(v) && v !== '') return Number(v);
+
+    return v;
+  }
+
   function loadTable(fileName) {
     const data = tsvDataList.find(d => d.name === fileName);
     if (!data) return;
@@ -184,9 +197,10 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
     const tableData = data.rows.map(row => {
       const obj = {};
       data.headers.forEach((header, i) => {
-        obj[header] = row[i];
+        const converted = inferAndConvert(row[i]);
+        obj[header] = converted;
         const parts = header.split('\n');
-        if (parts[1]) obj[parts[1]] = row[i];
+        if (parts[1]) obj[parts[1]] = converted;
       });
       return obj;
     });
