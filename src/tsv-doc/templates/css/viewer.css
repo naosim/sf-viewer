@@ -169,6 +169,41 @@ header .meta {
     padding: 0.25rem 0;
     font-size: 0.75rem;
 }
+.create-in-btn {
+    font-size: 0.625rem;
+    padding: 0.25rem 0.5rem;
+    margin-left: 0.5rem;
+    cursor: pointer;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 2px;
+    vertical-align: middle;
+}
+.create-in-btn:hover {
+    background: #2980b9;
+}
+.create-in-btn:disabled {
+    background: #bdc3c7;
+    cursor: not-allowed;
+}
+.toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #2c3e50;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    z-index: 2000;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+.toast.show {
+    opacity: 1;
+}
 .error {
     text-align: center;
     padding: 0.5rem;

@@ -97,15 +97,39 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
       .filter(v => v && v.trim());
 
     const valuesSection = document.querySelector('.column-info-section:nth-child(2)');
+    const createInBtn = document.getElementById('createInClause');
+
     if (uniqueValues.length > MAX_UNIQUE_VALUES_DISPLAY) {
       valuesSection.style.display = 'none';
+      createInBtn.style.display = 'none';
     } else {
       valuesSection.style.display = 'block';
       const ul = document.getElementById('columnValues');
       ul.innerHTML = uniqueValues.map(v => `<li>${v}</li>`).join('');
+
+      if (uniqueValues.length > 0) {
+        createInBtn.style.display = 'inline-block';
+        createInBtn.onclick = () => {
+          const inClause = `${apiName} IN (${uniqueValues.map(v => `'${v}'`).join(', ')})`;
+          navigator.clipboard.writeText(inClause).then(() => {
+            showToast('IN句をクリップボードにコピーしました');
+          });
+        };
+      } else {
+        createInBtn.style.display = 'none';
+      }
     }
 
     modal.style.display = 'block';
+  }
+
+  function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.classList.add('show');
+    setTimeout(() => {
+      toast.classList.remove('show');
+    }, 2000);
   }
 
   document.getElementById('modalClose').onclick = () => {
