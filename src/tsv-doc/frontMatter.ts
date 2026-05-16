@@ -27,6 +27,45 @@ export class FrontMatterTSV {
     return this;
   }
 
+  ensurePriorityFieldsFirst(): FrontMatterTSV {
+    const getBaseName = (h: string): string => {
+      return h.includes("\n") ? h.split("\n")[1] : h;
+    };
+
+    const priorityKeys = ["Id", "Label", "Name", "ApiName", "Title"];
+    const priorityHeaders: string[] = [];
+    const priorityIndices: number[] = [];
+    const otherIndices: number[] = [];
+
+    for (let i = 0; i < this.headers.length; i++) {
+      const base = getBaseName(this.headers[i]);
+      const lowerBase = base.toLowerCase();
+      const priorityIndex = priorityKeys.findIndex((key) => lowerBase === key.toLowerCase());
+
+      if (priorityIndex >= 0) {
+        if (!priorityHeaders[priorityIndex]) {
+          priorityHeaders[priorityIndex] = this.headers[i];
+          priorityIndices.push(i);
+        }
+      } else {
+        otherIndices.push(i);
+      }
+    }
+
+    if (priorityIndices.length > 0) {
+      const newHeaders = [...priorityHeaders.filter(Boolean), ...otherIndices.map((i) => this.headers[i])];
+      const newRows = this.rows.map((row) => {
+        const priorityValues = priorityIndices.map((i) => row[i]);
+        const otherValues = otherIndices.map((i) => row[i]);
+        return [...priorityValues, ...otherValues];
+      });
+      this.headers = newHeaders;
+      this.rows = newRows;
+    }
+
+    return this;
+  }
+
   addRow(row: string[]): FrontMatterTSV {
     this.rows.push(row);
     return this;
@@ -54,9 +93,13 @@ export class FrontMatterTSV {
     meta: { [key: string]: string },
     headers: string[],
     rows: string[][],
+    ensurePriorityFields?: boolean,
   ): string {
     const doc = new FrontMatterTSV();
     doc.setMeta(meta).setHeaders(headers).addRows(rows);
+    if (ensurePriorityFields) {
+      doc.ensurePriorityFieldsFirst();
+    }
     return doc.toString();
   }
 

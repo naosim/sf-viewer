@@ -70,6 +70,7 @@ function convertJsonToTsv(
   tsvPath: string,
   fieldLabelMap?: FieldLabelMap,
   objectName?: string,
+  ensurePriorityFields?: boolean,
 ): void {
   const metaWithLabel = { ...meta, label: label };
 
@@ -100,7 +101,7 @@ function convertJsonToTsv(
     }),
   );
 
-  const tsv = FrontMatterTSV.stringify(metaWithLabel, headers, rows);
+  const tsv = FrontMatterTSV.stringify(metaWithLabel, headers, rows, ensurePriorityFields);
   fs.writeFileSync(tsvPath, tsv);
 }
 
@@ -208,6 +209,7 @@ function main() {
       metaWithLabel,
       ["ObjectName", "FieldName", "Label", "DataType", "Length"],
       rows,
+      true,
     );
     const tsvPath = path.join(outputDir, "fields.tsv");
     fs.writeFileSync(tsvPath, tsv);
@@ -221,7 +223,7 @@ function main() {
     const jsonPath = path.join(inputDir, job.fileName);
     const tsvFileName = job.fileName.replace(".json", ".tsv");
     const tsvPath = path.join(outputDir, tsvFileName);
-    convertJsonToTsv(jsonPath, meta, job.label, tsvPath, fieldLabelMap, job.objectName);
+    convertJsonToTsv(jsonPath, meta, job.label, tsvPath, fieldLabelMap, job.objectName, true);
     console.log(
       `${tsvFileName} を out_designDoc/${tsvFileName} に保存しました。`,
     );
