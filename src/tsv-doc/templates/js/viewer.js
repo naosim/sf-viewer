@@ -107,6 +107,8 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
 
     parsed = parsed.replace(/\bAND\b/gi, '&&').replace(/\bOR\b/gi, '||');
 
+    parsed = parsed.replace(/(?<![<>=])=(?![=])/g, '==');
+
     parsed = parsed.replace(/\b([A-Za-z_][A-Za-z0-9_]*)\b/g, (match) => {
       if (data.hasOwnProperty(match)) {
         return `data.${match}`;
@@ -149,7 +151,17 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
 
     if (!activeTable) return;
 
-    const filterFunc = (data) => parseAndEvaluateFilter(filterText, data);
+    const filterFunc = (data) => {
+      try {
+        return parseAndEvaluateFilter(filterText, data);
+      } catch (e) {
+        console.error('フィルター構文エラー:', e);
+        showToast('フィルター構文エラー');
+        document.getElementById('filterError').textContent = 'フィルター構文エラー';
+        activeTable.clearFilter();
+        return false;
+      }
+    };
     activeTable.on('dataFiltered', (filters, rows) => {
       document.getElementById('rowCount').textContent = `${rows.length} / ${tableRowCount}`;
     });
