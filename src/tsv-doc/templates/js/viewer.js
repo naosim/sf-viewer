@@ -37,6 +37,15 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
   let activeTable = null;
   let currentTabName = "";
   const tabFilterState = {};
+  let tableRowCount = 0;
+
+  function updateRowCount() {
+    if (!activeTable) return;
+    setTimeout(() => {
+      const filtered = activeTable.getData().length;
+      document.getElementById('rowCount').textContent = `${filtered} / ${tableRowCount}`;
+    }, 0);
+  }
 
   function parseAndEvaluateFilter(expr, data) {
     let parsed = expr;
@@ -132,6 +141,8 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
     if (!filterText.trim()) {
       if (activeTable) {
         activeTable.clearFilter();
+        const filtered = activeTable.getData().length;
+        document.getElementById('rowCount').textContent = `${filtered} / ${tableRowCount}`;
       }
       return;
     }
@@ -139,6 +150,9 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
     if (!activeTable) return;
 
     const filterFunc = (data) => parseAndEvaluateFilter(filterText, data);
+    activeTable.on('dataFiltered', (filters, rows) => {
+      document.getElementById('rowCount').textContent = `${rows.length} / ${tableRowCount}`;
+    });
     activeTable.setFilter(filterFunc);
   }
 
@@ -334,7 +348,7 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
           maxWidth: 800,
           resizable: true,
           formatter: (cell) => {
-            const value = cell.getValue() || '';
+            const value = String(cell.getValue() || '');
             return `${value}<span class="cell-info-btn" data-value="${value.replace(/"/g, '&quot;')}">i</span>`;
           },
           formatterClipboard: (cell, type) => {
@@ -346,6 +360,9 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
         };
       }),
     });
+
+    tableRowCount = tableData.length;
+    updateRowCount();
 
     document.getElementById('table').addEventListener('click', (e) => {
       const cellInfoBtn = e.target.closest('.cell-info-btn');
@@ -390,6 +407,7 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
       applyFilter(savedFilter);
     } else {
       document.getElementById('filterInput').value = '';
+      updateRowCount();
     }
   }
 

@@ -89,6 +89,11 @@ header .meta {
     font-size: 0.625rem;
     padding: 0.25rem;
 }
+.row-count {
+    font-size: 0.75rem;
+    color: #7f8c8d;
+    margin-left: auto;
+}
 .content {
     padding: 0.25rem;
 }
