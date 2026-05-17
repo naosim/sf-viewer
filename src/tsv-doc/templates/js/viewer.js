@@ -190,7 +190,15 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
     createInBtn.style.display = 'none';
 
     const ul = document.getElementById('columnValues');
-    ul.innerHTML = `<li style="white-space: pre-wrap; word-break: break-all;">${value}</li>`;
+    let displayValue = value;
+
+    try {
+      const parsed = JSON.parse(value);
+      displayValue = JSON.stringify(parsed, null, 2);
+    } catch (e) {
+    }
+
+    ul.innerHTML = `<li style="white-space: pre-wrap; word-break: break-all;">${displayValue}</li>`;
 
     modal.style.display = 'block';
   }
