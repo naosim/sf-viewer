@@ -270,14 +270,64 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
       data: tableData,
       layout: "fitDataFill",
       height: tableHeight,
+      rowHeader: {
+        formatter: "rownum",
+        headerSort: false,
+        hozAlign: "center",
+        resizable: false,
+        frozen: true,
+        width: 40,
+      },
+      selectable: true,
+      selectableRange: 1,
+      selectableRangeColumns: true,
+      selectableRangeRows: true,
+      selectableRangeClearCells: true,
+      clipboard: true,
+      clipboardCopyStyled: false,
+      clipboardCopyRowRange: "range",
+      clipboardCopySelector: "active",
+      clipboardCopyConfig: {
+        rowHeaders: false,
+        columnHeaders: false,
+      },
+      multiSelect: true,
       columns: data.headers.map(header => {
         const parts = header.split('\n');
         const apiName = parts[1] || parts[0];
         const label = parts[0] || '';
         return {
-          title: `<span>${header.replace(/\n/g, '<br>')}</span><span class="column-info-btn" data-header="${header}" data-api="${apiName}" data-label="${label}">&#9432;</span>`,
+          title: header.replace(/\n/g, '<br>'),
           field: header,
           sortable: true,
+          selectable: true,
+          headerFormatter: (cell, formatterParams, onRendered) => {
+            const container = document.createElement('div');
+            container.style.display = 'flex';
+            container.style.alignItems = 'center';
+            container.style.justifyContent = 'space-between';
+            container.style.width = '100%';
+            
+            const titleSpan = document.createElement('span');
+            titleSpan.innerHTML = header.replace(/\n/g, '<br>');
+            container.appendChild(titleSpan);
+            
+            const infoBtn = document.createElement('span');
+            infoBtn.className = 'column-info-btn';
+            infoBtn.innerHTML = '&#9432;';
+            infoBtn.dataset.header = header;
+            infoBtn.dataset.api = apiName;
+            infoBtn.dataset.label = label;
+            container.appendChild(infoBtn);
+            
+            return container;
+          },
+          formatterClipboard: (cell, type) => {
+            if (type === 'clipboard') {
+              return cell.getValue();
+            }
+            return cell.getValue();
+          },
         };
       }),
     });
