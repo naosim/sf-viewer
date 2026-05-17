@@ -178,6 +178,23 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
     modal.style.display = 'block';
   }
 
+  function showCellValue(value) {
+    const modal = document.getElementById('columnInfoModal');
+    document.getElementById('modalColumnName').innerHTML = 'セルの値';
+    document.getElementById('columnApiName').textContent = '';
+    document.getElementById('columnLabel').textContent = '';
+
+    const valuesSection = document.querySelector('.column-info-section:nth-child(2)');
+    const createInBtn = document.getElementById('createInClause');
+    valuesSection.style.display = 'block';
+    createInBtn.style.display = 'none';
+
+    const ul = document.getElementById('columnValues');
+    ul.innerHTML = `<li style="white-space: pre-wrap; word-break: break-all;">${value}</li>`;
+
+    modal.style.display = 'block';
+  }
+
   function showToast(message) {
     const toast = document.getElementById('toast');
     toast.textContent = message;
@@ -305,6 +322,13 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
           sortable: false,
           selectable: true,
           headerSort: false,
+          minWidth: 50,
+          maxWidth: 800,
+          resizable: true,
+          formatter: (cell) => {
+            const value = cell.getValue() || '';
+            return `${value}<span class="cell-info-btn" data-value="${value.replace(/"/g, '&quot;')}">i</span>`;
+          },
           formatterClipboard: (cell, type) => {
             if (type === 'clipboard') {
               return cell.getValue();
@@ -316,6 +340,14 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
     });
 
     document.getElementById('table').addEventListener('click', (e) => {
+      const cellInfoBtn = e.target.closest('.cell-info-btn');
+      if (cellInfoBtn) {
+        e.stopPropagation();
+        const value = cellInfoBtn.dataset.value;
+        showCellValue(value);
+        return;
+      }
+
       const infoBtn = e.target.closest('.column-info-btn');
       if (infoBtn) {
         e.stopPropagation();

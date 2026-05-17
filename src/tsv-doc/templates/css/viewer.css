@@ -297,3 +297,26 @@ header .meta {
     color: #e74c3c;
     font-size: 0.75rem;
 }
+.cell-info-btn {
+    opacity: 0;
+    cursor: pointer;
+    font-size: 0.75rem;
+    color: #3498db;
+    margin-left: 4px;
+    transition: opacity 0.2s;
+    user-select: none;
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1;
+    background: white;
+    padding: 0 2px;
+}
+.tabulator-cell {
+    position: relative;
+    overflow: visible;
+}
+.tabulator-cell:hover .cell-info-btn {
+    opacity: 1;
+}
