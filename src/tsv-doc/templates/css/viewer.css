@@ -122,11 +122,53 @@ header .meta {
     font-size: 0.75rem;
 }
 
+.header-cell-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+.header-title {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+.sort-btn {
+    cursor: pointer;
+    padding: 2px 4px;
+    font-size: 0.75rem;
+    color: #7f8c8d;
+}
+.sort-btn:hover {
+    color: #3498db;
+}
 .column-info-btn {
     cursor: pointer;
     margin-left: 0.5rem;
     color: #3498db;
     font-size: 0.875rem;
+    display: inline-block;
+    padding: 2px 4px;
+    z-index: 100;
+    position: relative;
+    visibility: visible;
+    opacity: 1;
+    pointer-events: all;
+}
+.column-info-btn:hover {
+    background: rgba(52, 152, 219, 0.1);
+    border-radius: 2px;
+}
+
+/* Fix for Tabulator header click */
+.tabulator-header .tabulator-col {
+    position: relative;
 }
 .column-info-btn:hover {
     color: #2980b9;

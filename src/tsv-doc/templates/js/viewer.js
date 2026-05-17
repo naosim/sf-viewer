@@ -297,31 +297,11 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
         const apiName = parts[1] || parts[0];
         const label = parts[0] || '';
         return {
-          title: header.replace(/\n/g, '<br>'),
+          title: `<div class="header-cell-container"><span class="header-title">${header.replace(/\n/g, '<br>')}</span><span class="header-actions"><span class="column-info-btn" data-header="${header}" data-api="${apiName}" data-label="${label}">&#9432;</span><span class="sort-btn" data-field="${header}">▲▼</span></div>`,
           field: header,
-          sortable: true,
+          sortable: false,
           selectable: true,
-          headerFormatter: (cell, formatterParams, onRendered) => {
-            const container = document.createElement('div');
-            container.style.display = 'flex';
-            container.style.alignItems = 'center';
-            container.style.justifyContent = 'space-between';
-            container.style.width = '100%';
-            
-            const titleSpan = document.createElement('span');
-            titleSpan.innerHTML = header.replace(/\n/g, '<br>');
-            container.appendChild(titleSpan);
-            
-            const infoBtn = document.createElement('span');
-            infoBtn.className = 'column-info-btn';
-            infoBtn.innerHTML = '&#9432;';
-            infoBtn.dataset.header = header;
-            infoBtn.dataset.api = apiName;
-            infoBtn.dataset.label = label;
-            container.appendChild(infoBtn);
-            
-            return container;
-          },
+          headerSort: false,
           formatterClipboard: (cell, type) => {
             if (type === 'clipboard') {
               return cell.getValue();
@@ -333,11 +313,29 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
     });
 
     document.getElementById('table').addEventListener('click', (e) => {
-      if (e.target.classList.contains('column-info-btn')) {
-        const header = e.target.dataset.header;
-        const apiName = e.target.dataset.api;
-        const label = e.target.dataset.label;
+      const infoBtn = e.target.closest('.column-info-btn');
+      if (infoBtn) {
+        e.stopPropagation();
+        const header = infoBtn.dataset.header;
+        const apiName = infoBtn.dataset.api;
+        const label = infoBtn.dataset.label;
         showColumnInfo(header, apiName, label);
+        return;
+      }
+
+      const sortBtn = e.target.closest('.sort-btn');
+      if (sortBtn && activeTable) {
+        e.stopPropagation();
+        const field = sortBtn.dataset.field;
+
+        // 並べ替え状態を切り替え
+        if (window.sortState && window.sortState.field === field) {
+          window.sortState.order = window.sortState.order === 'asc' ? 'desc' : 'asc';
+        } else {
+          window.sortState = { field: field, order: 'desc' };
+        }
+
+        activeTable.setSort(field, window.sortState.order);
       }
     });
 
