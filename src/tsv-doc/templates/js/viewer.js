@@ -35,7 +35,8 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
   });
 
   let activeTable = null;
-  let currentFilterText = "";
+  let currentTabName = "";
+  const tabFilterState = {};
 
   function parseAndEvaluateFilter(expr, data) {
     let parsed = expr;
@@ -122,7 +123,9 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
   }
 
   function applyFilter(filterText) {
-    currentFilterText = filterText;
+    if (currentTabName) {
+      tabFilterState[currentTabName] = filterText;
+    }
     const errorEl = document.getElementById('filterError');
     errorEl.textContent = '';
 
@@ -339,8 +342,14 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
       }
     });
 
-    if (currentFilterText.trim()) {
-      applyFilter(currentFilterText);
+    currentTabName = fileName;
+
+    const savedFilter = tabFilterState[fileName];
+    if (savedFilter && savedFilter.trim()) {
+      document.getElementById('filterInput').value = savedFilter;
+      applyFilter(savedFilter);
+    } else {
+      document.getElementById('filterInput').value = '';
     }
   }
 
