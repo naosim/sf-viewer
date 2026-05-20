@@ -47,6 +47,35 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
     }, 0);
   }
 
+  function insertColumnNameToFilter(columnName) {
+    const input = document.getElementById('filterInput');
+    if (!input) return;
+    const start = input.selectionStart != null ? input.selectionStart : input.value.length;
+    const end = input.selectionEnd != null ? input.selectionEnd : start;
+    const value = input.value;
+    input.value = value.slice(0, start) + columnName + value.slice(end);
+    input.focus();
+    const pos = start + columnName.length;
+    input.setSelectionRange(pos, pos);
+  }
+
+  function renderFilterColumnList(headers) {
+    const listEl = document.getElementById('filterColumnList');
+    if (!listEl) return;
+    listEl.innerHTML = '';
+    headers.forEach(header => {
+      const parts = header.split('\n');
+      const apiName = parts[1] || parts[0];
+      const label = parts[0] || apiName;
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'filter-column-item';
+      item.textContent = apiName === label ? apiName : `${apiName} (${label})`;
+      item.addEventListener('click', () => insertColumnNameToFilter(apiName));
+      listEl.appendChild(item);
+    });
+  }
+
   function parseAndEvaluateFilter(expr, data) {
     let parsed = expr;
 
@@ -174,6 +203,15 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
     document.getElementById('columnApiName').textContent = `API名: ${apiName}`;
     document.getElementById('columnLabel').textContent = `ラベル: ${label}`;
 
+    const insertColumnNameBtn = document.getElementById('insertColumnNameBtn');
+    if (insertColumnNameBtn) {
+      insertColumnNameBtn.style.display = 'inline-block';
+      insertColumnNameBtn.onclick = () => {
+        insertColumnNameToFilter(apiName);
+        showToast('カラム名をフィルター欄に挿入しました');
+      };
+    }
+
     const uniqueValues = [...new Set(activeTable.getData().map(row => row[header]))]
       .filter(v => v && v.trim());
 
@@ -209,6 +247,11 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
     document.getElementById('modalColumnName').innerHTML = 'セルの値';
     document.getElementById('columnApiName').textContent = '';
     document.getElementById('columnLabel').textContent = '';
+
+    const insertColumnNameBtn = document.getElementById('insertColumnNameBtn');
+    if (insertColumnNameBtn) {
+      insertColumnNameBtn.style.display = 'none';
+    }
 
     const valuesSection = document.querySelector('.column-info-section:nth-child(2)');
     const createInBtn = document.getElementById('createInClause');
@@ -373,6 +416,7 @@ function initViewer(tsvDataList, mdDataList, meta, tabs) {
       }),
     });
 
+    renderFilterColumnList(data.headers);
     tableRowCount = tableData.length;
     updateRowCount();
 

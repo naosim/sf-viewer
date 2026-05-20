@@ -54,6 +54,45 @@ header .meta {
     align-items: center;
     flex-wrap: wrap;
 }
+.filter-column-list-wrapper {
+    padding: 0 0.5rem 0.5rem;
+    background: #ecf0f1;
+}
+.filter-column-list-title {
+    font-size: 0.75rem;
+    color: #7f8c8d;
+    margin-bottom: 0.25rem;
+}
+.filter-column-list {
+    /* 1行表示して横スクロールできるようにする */
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 0.25rem;
+    -webkit-overflow-scrolling: touch;
+}
+.filter-column-list::-webkit-scrollbar { height: 8px; }
+.filter-column-list::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.08); border-radius: 4px; }
+.filter-column-item {
+    display: inline-block;
+    border: 1px solid #95a5a6;
+    background: white;
+    color: #34495e;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.6rem;
+    margin-right: 0.25rem;
+    border-radius: 2px;
+    cursor: pointer;
+}
+.filter-column-item:hover {
+    background: #dfe6e9;
+}
+.modal-action-btn {
+    margin-top: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
 #filterInput {
     flex: 1;
     padding: 0.25rem 0.5rem;

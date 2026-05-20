@@ -29,6 +29,11 @@
     <span id="rowCount" class="row-count"></span>
   </div>
 
+  <div class="filter-column-list-wrapper">
+    <div class="filter-column-list-title">フィルター用列名（クリックで入力）</div>
+    <div id="filterColumnList" class="filter-column-list"></div>
+  </div>
+
   <div id="filterHelpModal" class="modal">
     <div class="modal-content modal-small">
       <div class="modal-header">
@@ -86,6 +91,7 @@ LastModifiedDate >= DateTime('2025-01-01T09:00:00')
           <h3>カラム情報</h3>
           <p id="columnApiName"></p>
           <p id="columnLabel"></p>
+          <button id="insertColumnNameBtn" class="modal-action-btn">フィルター入力へ挿入</button>
         </div>
         <div class="column-info-section">
           <h3>値のバリエーション <button id="createInClause" class="create-in-btn">IN句を作成</button></h3>
